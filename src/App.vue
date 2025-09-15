@@ -5,7 +5,7 @@ import DashboardCard from './components/DashboardCard.vue';
 import TransactionLog from './components/TransactionLog.vue';
 import AddTransactionForm from './components/AddTransactionForm.vue';
 import { type Transaction } from "@/lib/types"
-import apiClient from "@/lib/api"
+import supabase from "../lib/api"
 
 
 const DASHBOARD_GAP = {
@@ -21,19 +21,20 @@ provide('globalStyles', {
 })
 
 const handleAddTransactionClicked = async (transaction: Transaction) => {
-  const createdTransaction = await apiClient.createTransaction(transaction);
+  // const createdTransaction = await apiClient.createTransaction(transaction);
   console.log(createdTransaction);
 }
 
 const handleDeleteTransactionClicked = (id: string) => {
   console.log('deleting transaction', id);
-  apiClient.deleteTransaction(id);
+  // apiClient.deleteTransaction(id);
 }
 
 const transactions = ref<Transaction[]>([]);
 
 onMounted(async () => {
-  transactions.value = await apiClient.getAllTransactions();
+  console.log('supabase', supabase);
+  // transactions.value = await apiClient.getAllTransactions();
   console.debug('fetched transactions on App mount', transactions.value);
 
 })
