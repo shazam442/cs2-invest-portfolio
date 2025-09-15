@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { defineEmits, ref, inject } from 'vue';
-import apiClient from '../../lib/api';
-import { type Transaction } from '../../lib/types';
+import supabase from '../../lib/api';
+import { type Database } from '../../lib/supabase.types';
 import TransactionLogItem from './TransactionLogItem.vue';
+import { formatDate } from '../../lib/utils';
 
-const transactions = defineModel<Transaction[]>();
+const transactions = defineModel<Database['public']['Tables']['cs_transaction']['Row'][]>();
 
 const error = ref<string | null>(null);
 
@@ -15,7 +16,7 @@ const emit = defineEmits(['deleteTransaction']);
 const handleDeleteTransactionClicked = (id: string) => {
   console.debug('deleteTransactionClicked', id);
   emit('deleteTransaction', id);
-  transactions.value = transactions.value.filter(transaction => transaction._id !== id);
+  transactions.value = transactions.value.filter(transaction => transaction.id !== id);
 }
 
 </script>
@@ -35,7 +36,7 @@ const handleDeleteTransactionClicked = (id: string) => {
       </tr>
     </thead>
     <tbody>
-      <TransactionLogItem v-for="transaction in transactions" :key="transaction._id || transaction.name"
+      <TransactionLogItem v-for="transaction in transactions" :key="transaction.id || transaction.name"
         :item="transaction" @deleteTransaction="handleDeleteTransactionClicked($event)" />
     </tbody>
   </table>

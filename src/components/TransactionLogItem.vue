@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { defineProps, defineEmits } from 'vue';
+import { type Database } from '../../lib/supabase.types';
+import { formatDate } from '../../lib/utils';
 
 const props = defineProps<{
-    item: any
+    item: Database['public']['Tables']['cs_transaction']['Row']
 }>();
 
 const emit = defineEmits(['deleteTransaction']);
@@ -16,14 +18,14 @@ const handleDeleteTransactionClicked = (id: string) => {
 <template>
     <tr>
         <td>{{ item.name }}</td>
-        <td>{{ item.amount }}x</td>
-        <td>{{ item.price }} €</td>
+        <td>{{ item.unit_factor }}x</td>
+        <td>{{ item.unit_price }} €</td>
         <td>{{ item.origin }}</td>
-        <td>{{ item.date }}</td>
-        <td>{{ item.amount * item.price }} €</td>
+        <td>{{ formatDate(item.transacted_at) }}</td>
+        <td>{{ item.unit_factor * item.unit_price }} €</td>
         <td>{{ item.steamValue || "-" }} €</td>
         <td>{{ item.cashoutMargin || "-" }} €</td>
-        <td><button class="delete-btn" @click="handleDeleteTransactionClicked(item._id)">Del</button>
+        <td><button class="delete-btn" @click="handleDeleteTransactionClicked(item.id)">Del</button>
         </td>
     </tr>
 </template>
