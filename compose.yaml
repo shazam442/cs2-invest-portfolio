@@ -1,0 +1,16 @@
+services:
+  mongodb:
+    container_name: mongodb
+    image: mongodb/mongodb-community-server:latest
+    ports:
+      - 27017:27017
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=cs2-invest
+    restart: unless-stopped
+
+volumes:
+  mongodb_data:
+    driver: local
+    

@@ -1,20 +1,27 @@
 <script setup lang="ts">
+import { defineEmits, ref, inject } from 'vue';
+import mongoClient from '../../lib/mongo';
+import { type Transaction } from '../../lib/types';
 import TransactionLogItem from './TransactionLogItem.vue';
 
-const sampleItem = {
-  name: 'Sample Item',
-  amount: 100,
-  price: 100,
-  origin: 'Sample Origin',
-  date: '2021-01-01',
-  totalPrice: 10000,
-  steamValue: 10000,
-  cashoutMargin: 10000
+const transactions = defineModel<Transaction[]>();
+
+const error = ref<string | null>(null);
+
+const globalStyles = inject('globalStyles') as { DASHBOARD_GAP: { factor: number, unit: string } };
+
+const emit = defineEmits(['deleteTransaction']);
+
+const handleDeleteTransactionClicked = (id: string) => {
+  console.debug('deleteTransactionClicked', id);
+  emit('deleteTransaction', id);
+  transactions.value = transactions.value.filter(transaction => transaction._id !== id);
 }
+
 </script>
 
 <template>
-  <table :style="{ padding: DASHBOARD_GAP }" style="width: 100%;">
+  <table :style="{ padding: globalStyles.DASHBOARD_GAP }" style="width: 100%;">
     <thead>
       <tr>
         <th>Name</th>
@@ -28,7 +35,8 @@ const sampleItem = {
       </tr>
     </thead>
     <tbody>
-      <TransactionLogItem :item="sampleItem" />
+      <TransactionLogItem v-for="transaction in transactions" :key="transaction._id || transaction.name"
+        :item="transaction" @deleteTransaction="handleDeleteTransactionClicked($event)" />
     </tbody>
   </table>
 </template>

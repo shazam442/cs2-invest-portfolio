@@ -1,8 +1,12 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, provide, onMounted, ref } from 'vue';
 
 import DashboardCard from './components/DashboardCard.vue';
 import TransactionLog from './components/TransactionLog.vue';
+import AddTransactionForm from './components/AddTransactionForm.vue';
+import { type Transaction } from "@/lib/types"
+import apiClient from "@/lib/mongo"
+
 
 const DASHBOARD_GAP = {
   factor: 1.5,
@@ -10,6 +14,29 @@ const DASHBOARD_GAP = {
 }
 
 const DASHBOARD_GAP_FULL = computed(() => `${DASHBOARD_GAP.factor}${DASHBOARD_GAP.unit}`)
+
+provide('globalStyles', {
+  DASHBOARD_GAP,
+  DASHBOARD_GAP_FULL
+})
+
+const handleAddTransactionClicked = async (transaction: Transaction) => {
+  const createdTransaction = await apiClient.createTransaction(transaction);
+  console.log(createdTransaction);
+}
+
+const handleDeleteTransactionClicked = (id: string) => {
+  console.log('deleting transaction', id);
+  apiClient.deleteTransaction(id);
+}
+
+const transactions = ref<Transaction[]>([]);
+
+onMounted(async () => {
+  transactions.value = await apiClient.getAllTransactions();
+  console.debug('fetched transactions on App mount', transactions.value);
+
+})
 </script>
 
 <template>
@@ -34,7 +61,9 @@ const DASHBOARD_GAP_FULL = computed(() => `${DASHBOARD_GAP.factor}${DASHBOARD_GA
         style="display: flex; flex-direction: row; align-items: stretch; justify-content: space-between; flex-grow: 4;"
         :style="{ gap: DASHBOARD_GAP_FULL }">
         <div style="flex-grow: 5; background-color: var(--color-surface); padding: 1rem;">
-          <TransactionLog />
+          <h1 style="margin-bottom: 1rem;">Investment Portfolio</h1>
+          <AddTransactionForm @addTransaction="handleAddTransactionClicked" />
+          <TransactionLog @deleteTransaction="handleDeleteTransactionClicked" v-model="transactions" />
         </div>
         <div style="flex-grow: 1; background-color: var(--color-bg-muted);" :style="{ padding: DASHBOARD_GAP }">card2
         </div>
