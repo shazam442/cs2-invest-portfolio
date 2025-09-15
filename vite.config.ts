@@ -5,9 +5,8 @@ import path from 'path'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [vue()],
-  root: './frontend',
   build: {
-    outDir: '../dist',
+    outDir: './dist',
   },
   resolve: {
     alias: {

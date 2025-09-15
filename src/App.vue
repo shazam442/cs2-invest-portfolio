@@ -5,7 +5,7 @@ import DashboardCard from './components/DashboardCard.vue';
 import TransactionLog from './components/TransactionLog.vue';
 import AddTransactionForm from './components/AddTransactionForm.vue';
 import { type Transaction } from "@/lib/types"
-import apiClient from "@/lib/mongo"
+import apiClient from "@/lib/api"
 
 
 const DASHBOARD_GAP = {

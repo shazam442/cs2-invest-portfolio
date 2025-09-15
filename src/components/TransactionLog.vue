@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { defineEmits, ref, inject } from 'vue';
-import mongoClient from '../../lib/mongo';
+import apiClient from '../../lib/api';
 import { type Transaction } from '../../lib/types';
 import TransactionLogItem from './TransactionLogItem.vue';
 

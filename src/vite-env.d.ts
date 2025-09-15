@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-  readonly VITE_MONGODB_URI: string
+  // Add your environment variables here
   // more env variables...
 }
 
