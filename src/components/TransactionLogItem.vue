@@ -16,48 +16,193 @@ const handleDeleteTransactionClicked = (id: string) => {
 </script>
 
 <template>
-    <tr>
-        <td>{{ item.name }}</td>
-        <td>{{ item.unit_factor }}x</td>
-        <td>{{ item.unit_price }} €</td>
-        <td>{{ item.origin }}</td>
-        <td>{{ formatDate(item.transacted_at) }}</td>
-        <td>{{ item.unit_factor * item.unit_price }} €</td>
-        <td>{{ item.steamValue || "-" }} €</td>
-        <td>{{ item.cashoutMargin || "-" }} €</td>
-        <td><button class="delete-btn" @click="handleDeleteTransactionClicked(item.id)">Del</button>
-        </td>
-    </tr>
+    <div class="transaction-item">
+        <div class="item-main">
+            <div class="item-info">
+                <h4 class="item-name">{{ item.name }}</h4>
+                <div class="item-meta">
+                    <span class="item-origin">{{ item.origin }}</span>
+                    <span class="item-date">{{ formatDate(item.transacted_at) }}</span>
+                </div>
+            </div>
+
+            <div class="item-details">
+                <div class="detail-item">
+                    <span class="detail-label">Anzahl</span>
+                    <span class="detail-value">{{ item.unit_factor }}x</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Einzelpreis</span>
+                    <span class="detail-value">{{ item.unit_price }} €</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Gesamtkosten</span>
+                    <span class="detail-value">{{ item.unit_factor * item.unit_price }} €</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Steam Wert</span>
+                    <span class="detail-value steam-value">{{ item.steamValue || "-" }} €</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Marge</span>
+                    <span class="detail-value margin-value">{{ item.cashoutMargin || "-" }} €</span>
+                </div>
+            </div>
+
+            <div class="item-actions">
+                <button class="btn btn-sm btn-danger" @click="handleDeleteTransactionClicked(item.id)">
+                    <span class="btn-icon">🗑</span>
+                </button>
+            </div>
+        </div>
+    </div>
 </template>
 
 <style scoped>
-tr {
-    border-bottom: 1px solid var(--color-border);
+.transaction-item {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: var(--space-sm);
+    transition: all 0.2s ease;
+    position: relative;
 }
 
-tr:hover {
-    background-color: var(--color-bg-muted);
+.transaction-item:hover {
+    box-shadow: var(--shadow-sm);
+    border-color: var(--color-border-strong);
 }
 
-td {
-    padding: 0.75rem 0.5rem;
+.transaction-item:not(:last-child) {
+    margin-bottom: var(--space-xs);
+}
+
+.item-main {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+}
+
+.item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.item-name {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text);
+    margin: 0 0 var(--space-xs) 0;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.item-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+}
+
+.item-origin {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    background: var(--color-bg-muted);
+    padding: 2px var(--space-xs);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
+}
+
+.item-date {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-subtle);
+}
+
+.item-details {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    flex-wrap: wrap;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 60px;
+}
+
+.detail-label {
+    font-size: 10px;
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.detail-value {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
     color: var(--color-text);
 }
 
-td:first-child {
-    padding-left: 0;
-    font-weight: 500;
+.steam-value {
+    color: var(--color-success);
 }
 
-td:last-child {
-    padding-right: 0;
+.margin-value {
+    color: var(--color-warning);
 }
 
-.delete-btn {
-    background-color: red;
-    border: none;
-    padding: 0.2rem 0.5rem;
-    color: white;
-    border-radius: 0.2rem;
+.item-actions {
+    display: flex;
+    align-items: center;
+}
+
+.btn-icon {
+    font-size: var(--font-size-xs);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .item-main {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--space-sm);
+    }
+
+    .item-details {
+        justify-content: space-between;
+        gap: var(--space-sm);
+    }
+
+    .detail-item {
+        min-width: 50px;
+    }
+}
+
+@media (max-width: 480px) {
+    .item-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-xs);
+    }
+
+    .item-details {
+        flex-direction: column;
+        gap: var(--space-xs);
+        align-items: stretch;
+    }
+
+    .detail-item {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        min-width: auto;
+    }
 }
 </style>

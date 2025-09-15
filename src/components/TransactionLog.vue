@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineEmits, ref, inject } from 'vue';
+import { defineEmits, ref, inject, computed } from 'vue';
 import supabase from '../../lib/api';
 import { type Database } from '../../lib/supabase.types';
 import TransactionLogItem from './TransactionLogItem.vue';
@@ -8,6 +8,10 @@ import { formatDate } from '../../lib/utils';
 const transactions = defineModel<Database['public']['Tables']['cs_transaction']['Row'][]>();
 
 const error = ref<string | null>(null);
+const sortBy = ref<'date' | 'name' | 'value'>('date');
+const sortOrder = ref<'asc' | 'desc'>('desc');
+const filterOrigin = ref<string>('all');
+const showFilters = ref<boolean>(false);
 
 const globalStyles = inject('globalStyles') as { DASHBOARD_GAP: { factor: number, unit: string } };
 
@@ -19,49 +23,360 @@ const handleDeleteTransactionClicked = (id: string) => {
   transactions.value = transactions.value.filter(transaction => transaction.id !== id);
 }
 
+const sortedAndFilteredTransactions = computed(() => {
+  if (!transactions.value) return [];
+
+  let filtered = transactions.value;
+
+  // Filter by origin
+  if (filterOrigin.value !== 'all') {
+    filtered = filtered.filter(t => t.origin === filterOrigin.value);
+  }
+
+  // Sort transactions
+  return filtered.sort((a, b) => {
+    let comparison = 0;
+
+    switch (sortBy.value) {
+      case 'date':
+        comparison = new Date(a.transacted_at).getTime() - new Date(b.transacted_at).getTime();
+        break;
+      case 'name':
+        comparison = a.name.localeCompare(b.name);
+        break;
+      case 'value':
+        const aValue = a.unit_factor * a.unit_price;
+        const bValue = b.unit_factor * b.unit_price;
+        comparison = aValue - bValue;
+        break;
+    }
+
+    return sortOrder.value === 'asc' ? comparison : -comparison;
+  });
+});
+
+const uniqueOrigins = computed(() => {
+  if (!transactions.value) return [];
+  const origins = [...new Set(transactions.value.map(t => t.origin))];
+  return origins.sort();
+});
+
+const toggleSort = (field: 'date' | 'name' | 'value') => {
+  if (sortBy.value === field) {
+    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortBy.value = field;
+    sortOrder.value = 'asc';
+  }
+};
+
+const toggleFilters = () => {
+  showFilters.value = !showFilters.value;
+};
+
 </script>
 
 <template>
-  <table :style="{ padding: globalStyles.DASHBOARD_GAP }" style="width: 100%;">
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Anzahl</th>
-        <th>Einheitspreis</th>
-        <th>Ursprung</th>
-        <th>Datum</th>
-        <th>Kaufpreis gesamt</th>
-        <th>Steamwert heute</th>
-        <th>Cashoutmarge</th>
-      </tr>
-    </thead>
-    <tbody>
-      <TransactionLogItem v-for="transaction in transactions" :key="transaction.id || transaction.name"
-        :item="transaction" @deleteTransaction="handleDeleteTransactionClicked($event)" />
-    </tbody>
-  </table>
+  <div class="transaction-log">
+    <div class="log-header">
+      <div class="log-title">
+        <h3>Transaktionshistorie</h3>
+        <span class="log-count">{{ sortedAndFilteredTransactions.length }} Items</span>
+      </div>
+      <button @click="toggleFilters" class="filter-toggle-btn" :class="{ active: showFilters }">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46"></polygon>
+        </svg>
+        Filter
+      </button>
+    </div>
+
+    <!-- Filters and Sorting -->
+    <div v-show="showFilters" class="log-controls">
+      <div class="control-group">
+        <label class="control-label">Nach Herkunft filtern:</label>
+        <select v-model="filterOrigin" class="control-select">
+          <option value="all">Alle Herkünfte</option>
+          <option v-for="origin in uniqueOrigins" :key="origin" :value="origin">
+            {{ origin }}
+          </option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label class="control-label">Sortieren nach:</label>
+        <div class="sort-buttons">
+          <button @click="toggleSort('date')" class="sort-btn" :class="{ active: sortBy === 'date' }">
+            Datum {{ sortBy === 'date' ? (sortOrder === 'asc' ? '↑' : '↓') : '' }}
+          </button>
+          <button @click="toggleSort('name')" class="sort-btn" :class="{ active: sortBy === 'name' }">
+            Name {{ sortBy === 'name' ? (sortOrder === 'asc' ? '↑' : '↓') : '' }}
+          </button>
+          <button @click="toggleSort('value')" class="sort-btn" :class="{ active: sortBy === 'value' }">
+            Wert {{ sortBy === 'value' ? (sortOrder === 'asc' ? '↑' : '↓') : '' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="log-content">
+      <div v-if="!transactions || transactions.length === 0" class="empty-state">
+        <div class="empty-icon">📦</div>
+        <h4>Noch keine Transaktionen</h4>
+        <p>Fügen Sie Ihren ersten CS2-Item-Kauf hinzu, um zu beginnen</p>
+      </div>
+
+      <div v-else-if="sortedAndFilteredTransactions.length === 0" class="empty-state">
+        <div class="empty-icon">🔍</div>
+        <h4>Keine passenden Transaktionen</h4>
+        <p>Versuchen Sie, Ihre Filter anzupassen, um mehr Ergebnisse zu sehen</p>
+      </div>
+
+      <div v-else class="transaction-list">
+        <TransactionLogItem v-for="transaction in sortedAndFilteredTransactions"
+          :key="transaction.id || transaction.name" :item="transaction"
+          @deleteTransaction="handleDeleteTransactionClicked($event)" />
+      </div>
+    </div>
+  </div>
 </template>
 
 <style scoped>
-table {
-  border-collapse: collapse;
-  width: 100%;
+.transaction-log {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
 }
 
-th {
-  background-color: var(--color-bg-muted);
+.log-header {
+  background: var(--color-bg-muted);
+  padding: var(--space-md);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.log-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.log-title h3 {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text);
-  font-weight: 600;
-  padding: 0.75rem 0.5rem;
-  text-align: left;
-  border-bottom: 2px solid var(--color-border);
+  margin: 0;
 }
 
-th:first-child {
-  padding-left: 0;
+.log-count {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+  padding: 2px var(--space-xs);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
 }
 
-th:last-child {
-  padding-right: 0;
+.filter-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.filter-toggle-btn:hover {
+  background: var(--color-bg-muted);
+  color: var(--color-text);
+  border-color: var(--color-border-strong);
+}
+
+.filter-toggle-btn.active {
+  background: var(--color-accent);
+  color: white;
+  border-color: var(--color-accent);
+}
+
+.filter-toggle-btn svg {
+  flex-shrink: 0;
+}
+
+
+.log-controls {
+  background: var(--color-bg-muted);
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-sm) var(--space-md);
+  display: flex;
+  gap: var(--space-md);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.control-label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+.control-select {
+  padding: 2px var(--space-xs);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--font-size-xs);
+  min-width: 100px;
+}
+
+.control-select:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.sort-buttons {
+  display: flex;
+  gap: 2px;
+}
+
+.sort-btn {
+  padding: 2px var(--space-xs);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 10px;
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.sort-btn:hover {
+  background: var(--color-bg-muted);
+  color: var(--color-text);
+  border-color: var(--color-border-strong);
+}
+
+.sort-btn.active {
+  background: var(--color-accent);
+  color: white;
+  border-color: var(--color-accent);
+}
+
+.log-content {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.empty-state {
+  text-align: center;
+  padding: var(--space-lg);
+  color: var(--color-text-muted);
+}
+
+.empty-icon {
+  font-size: 2rem;
+  margin-bottom: var(--space-sm);
+}
+
+.empty-state h4 {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin: 0 0 var(--space-xs) 0;
+}
+
+.empty-state p {
+  font-size: var(--font-size-xs);
+  margin: 0;
+}
+
+.transaction-list {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Custom scrollbar */
+.log-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.log-content::-webkit-scrollbar-track {
+  background: var(--color-bg-muted);
+}
+
+.log-content::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: 3px;
+}
+
+.log-content::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-subtle);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .log-header {
+    flex-direction: column;
+    gap: var(--space-sm);
+    align-items: stretch;
+  }
+
+  .log-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-sm);
+  }
+
+  .control-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-xs);
+  }
+
+  .sort-buttons {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .log-content {
+    max-height: 350px;
+  }
+}
+
+@media (max-width: 480px) {
+  .log-controls {
+    padding: var(--space-xs) var(--space-sm);
+  }
+
+  .sort-buttons {
+    gap: 2px;
+  }
+
+  .sort-btn {
+    flex: 1;
+    min-width: 0;
+    font-size: 9px;
+  }
 }
 </style>

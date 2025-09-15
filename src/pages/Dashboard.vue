@@ -4,8 +4,10 @@ import { computed, provide, onMounted, ref } from 'vue';
 import DashboardCard from '../components/DashboardCard.vue';
 import TransactionLog from '../components/TransactionLog.vue';
 import AddTransactionForm from '../components/AddTransactionForm.vue';
-import { type Transaction } from "@/lib/types"
+import Sidebar from '../components/Sidebar.vue';
+import { type Database } from "../../lib/supabase.types"
 import supabase from "../../lib/api"
+import type { User } from '@supabase/supabase-js'
 
 
 const DASHBOARD_GAP = {
@@ -20,7 +22,7 @@ provide('globalStyles', {
     DASHBOARD_GAP_FULL
 })
 
-const handleAddTransactionClicked = async (transaction: Transaction) => {
+const handleAddTransactionClicked = async (transaction: any) => {
     // const createdTransaction = await apiClient.createTransaction(transaction);
     console.log(transaction);
 }
@@ -30,50 +32,383 @@ const handleDeleteTransactionClicked = (id: string) => {
     // apiClient.deleteTransaction(id);
 }
 
-const transactions = ref<Transaction[]>([]);
+const transactions = ref<Database['public']['Tables']['cs_transaction']['Row'][]>([]);
+const currentUser = ref<User | null>(null);
+
+// Computed properties for dashboard statistics
+const totalSpent = computed(() => {
+    return transactions.value.reduce((sum, transaction) => {
+        return sum + (transaction.unit_factor * transaction.unit_price);
+    }, 0);
+});
+
+const totalItems = computed(() => {
+    return transactions.value.reduce((sum, transaction) => {
+        return sum + transaction.unit_factor;
+    }, 0);
+});
+
+const steamValue = computed(() => {
+    // Steam market fees: 15% total (5% Steam + 10% game-specific for CS2)
+    // Net value after fees = gross value / 1.15 - 0.01
+    return (totalSpent.value / 1.15) - 0.01;
+});
+
+const cashoutMargin = computed(() => {
+    return steamValue.value - totalSpent.value;
+});
+
+const totalSpentChange = computed(() => {
+    if (transactions.value.length === 0) return '0%';
+
+    // Calculate change based on recent transactions (last 7 days)
+    const now = new Date();
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    const recentTransactions = transactions.value.filter(t =>
+        t.transacted_at && new Date(t.transacted_at) >= weekAgo
+    );
+
+    const recentValue = recentTransactions.reduce((sum, t) => sum + (t.unit_factor * t.unit_price), 0);
+    const totalSpentNum = totalSpent.value;
+
+    if (totalSpentNum === 0) return '0%';
+
+    // Calculate what percentage of total value was added in the last 7 days
+    const changePercent = (recentValue / totalSpentNum) * 100;
+    return changePercent > 0 ? `+${changePercent.toFixed(1)}%` : `${changePercent.toFixed(1)}%`;
+});
+
+const steamValueChange = computed(() => {
+    if (transactions.value.length === 0) return '0%';
+
+    // Calculate Steam value change based on recent transactions
+    const now = new Date();
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    const recentTransactions = transactions.value.filter(t =>
+        t.transacted_at && new Date(t.transacted_at) >= weekAgo
+    );
+
+    const recentValue = recentTransactions.reduce((sum, t) => sum + (t.unit_factor * t.unit_price), 0);
+    const recentSteamValue = (recentValue / 1.15) - 0.01;
+    const totalSteamValue = steamValue.value;
+
+    if (totalSteamValue === 0) return '0%';
+
+    const changePercent = (recentSteamValue / totalSteamValue) * 100;
+    return changePercent > 0 ? `+${changePercent.toFixed(1)}%` : `${changePercent.toFixed(1)}%`;
+});
+
+const cashoutMarginChange = computed(() => {
+    if (transactions.value.length === 0) return '0%';
+
+    // Calculate cashout margin change based on recent transactions
+    const now = new Date();
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    const recentTransactions = transactions.value.filter(t =>
+        t.transacted_at && new Date(t.transacted_at) >= weekAgo
+    );
+
+    const recentValue = recentTransactions.reduce((sum, t) => sum + (t.unit_factor * t.unit_price), 0);
+    const recentSteamValue = (recentValue / 1.15) - 0.01;
+    const recentMargin = recentValue - recentSteamValue;
+    const totalMargin = cashoutMargin.value;
+
+    if (totalMargin === 0) return '0%';
+
+    const changePercent = (recentMargin / totalMargin) * 100;
+    return changePercent > 0 ? `+${changePercent.toFixed(1)}%` : `${changePercent.toFixed(1)}%`;
+});
+
+const totalItemsChange = computed(() => {
+    if (transactions.value.length === 0) return '+0';
+
+    // Calculate items added in the last 7 days
+    const now = new Date();
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    const recentItems = transactions.value
+        .filter(t => t.transacted_at && new Date(t.transacted_at) >= weekAgo)
+        .reduce((sum, t) => sum + t.unit_factor, 0);
+
+    // Show percentage change for items if we have enough data
+    if (totalItems.value > 0 && recentItems > 0) {
+        const changePercent = (recentItems / totalItems.value) * 100;
+        return changePercent > 0 ? `+${changePercent.toFixed(1)}%` : `${changePercent.toFixed(1)}%`;
+    }
+
+    return recentItems > 0 ? `+${recentItems}` : '+0';
+});
+
+// Computed properties for change types
+const totalSpentChangeType = computed(() => {
+    const change = parseFloat(totalSpentChange.value.replace('%', ''));
+    return change > 0 ? 'positive' : change < 0 ? 'negative' : 'neutral';
+});
+
+const steamValueChangeType = computed(() => {
+    const change = parseFloat(steamValueChange.value.replace('%', ''));
+    return change > 0 ? 'positive' : change < 0 ? 'negative' : 'neutral';
+});
+
+const cashoutMarginChangeType = computed(() => {
+    const change = parseFloat(cashoutMarginChange.value.replace('%', ''));
+    return change > 0 ? 'positive' : change < 0 ? 'negative' : 'neutral';
+});
+
+const totalItemsChangeType = computed(() => {
+    const changeStr = totalItemsChange.value.replace('+', '').replace('%', '');
+    const change = parseFloat(changeStr);
+    return change > 0 ? 'positive' : change < 0 ? 'negative' : 'neutral';
+});
+
+// Utility function to format currency
+const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('de-DE', {
+        style: 'currency',
+        currency: 'EUR',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }).format(value);
+};
 
 onMounted(async () => {
+    // Fetch current user
+    const { data: { user } } = await supabase.auth.getUser();
+    currentUser.value = user;
+
+    // Fetch transactions
     const { data, error } = await supabase.from('cs_transaction').select('*');
     if (error) {
         console.error('error fetching transactions', error);
     } else {
         console.log('Successfully fetched transactions', data);
-        transactions.value = data;
+        transactions.value = data || [];
     }
 })
 </script>
 
 <template>
-    <div style="display: flex; flex-direction: row; height: 100vh; width: 100vw; align-items: stretch;">
-        <div style="width: 5rem; background-color: var(--color-bg-muted); padding: 1rem;">
-            <div style="font-weight: bold; text-align: center; padding: 0.5rem;">
-                CS2
-            </div>
-        </div>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <Sidebar :user="currentUser" />
 
-        <div style="flex-grow: 1; display: flex; flex-direction: column; align-items: stretch; padding: 3rem;"
-            :style="{ gap: DASHBOARD_GAP.factor * 1.5 + DASHBOARD_GAP.unit }">
-            <div style="display: flex; flex-direction: row; align-items: stretch; justify-content: space-between; flex-grow: 1"
-                :style="{ gap: DASHBOARD_GAP_FULL }">
-                <DashboardCard />
-                <DashboardCard />
-                <DashboardCard />
-                <DashboardCard />
-            </div>
-            <div style="display: flex; flex-direction: row; align-items: stretch; justify-content: space-between; flex-grow: 4;"
-                :style="{ gap: DASHBOARD_GAP_FULL }">
-                <div style="flex-grow: 5; background-color: var(--color-surface); padding: 1rem;">
-                    <h1 style="margin-bottom: 1rem;">Investment Portfolio</h1>
+        <!-- Main Content -->
+        <main class="main-content">
+
+            <!-- Stats Cards -->
+            <section class="stats-section">
+                <div class="stats-grid">
+                    <DashboardCard title="Ausgaben" :value="formatCurrency(totalSpent)" :change="totalSpentChange"
+                        :changeType="totalSpentChangeType" icon="💰" />
+                    <DashboardCard title="Steam Netto" :value="formatCurrency(steamValue)" :change="steamValueChange"
+                        :changeType="steamValueChangeType" icon="🎮" />
+                    <DashboardCard title="Steam Gewinn" :value="formatCurrency(cashoutMargin)"
+                        :change="cashoutMarginChange" :changeType="cashoutMarginChangeType" icon="📈" />
+                    <DashboardCard title="Gesamt Items" :value="totalItems.toString()" :change="totalItemsChange"
+                        :changeType="totalItemsChangeType" icon="📦" />
+                </div>
+            </section>
+
+            <!-- Content Grid -->
+            <section class="content-section">
+                <div class="content-grid">
+                    <!-- Transactions Panel -->
+                    <div class="transactions-container">
+                        <TransactionLog @deleteTransaction="handleDeleteTransactionClicked" v-model="transactions" />
+                    </div>
+
+                    <!-- Side Panel -->
                     <AddTransactionForm @addTransaction="handleAddTransactionClicked" />
-                    <TransactionLog @deleteTransaction="handleDeleteTransactionClicked" v-model="transactions" />
                 </div>
-                <div style="flex-grow: 1; background-color: var(--color-bg-muted);" :style="{ padding: DASHBOARD_GAP }">
-                    card2
-                </div>
-            </div>
-        </div>
-
+            </section>
+        </main>
     </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+.dashboard-container {
+    display: flex;
+    height: 100vh;
+    background: var(--color-bg-muted);
+}
+
+
+/* Main Content */
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.page-header {
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    padding: var(--space-xl);
+}
+
+.header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.page-title {
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text);
+    margin: 0;
+}
+
+.header-actions {
+    display: flex;
+    gap: var(--space-sm);
+}
+
+.btn-icon {
+    margin-right: var(--space-xs);
+}
+
+/* Stats Section */
+.stats-section {
+    padding: var(--space-xl);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--space-lg);
+}
+
+/* Content Section */
+.content-section {
+    flex: 1;
+    padding: 0 var(--space-xl) var(--space-xl);
+    overflow: hidden;
+}
+
+.content-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: var(--space-lg);
+    height: 100%;
+}
+
+.content-panel {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.main-panel {
+    min-height: 0;
+}
+
+.side-panel {
+    min-height: 0;
+}
+
+.transactions-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.panel-header {
+    padding: var(--space-lg);
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--color-bg-muted);
+}
+
+.panel-title {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text);
+    margin: 0;
+}
+
+.panel-actions {
+    display: flex;
+    gap: var(--space-sm);
+}
+
+.panel-content {
+    flex: 1;
+    padding: var(--space-lg);
+    overflow: auto;
+}
+
+/* Quick Actions */
+.quick-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.action-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-md);
+    background: var(--color-bg-muted);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    text-decoration: none;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+}
+
+.action-btn:hover {
+    background: var(--color-accent);
+    color: white;
+    border-color: var(--color-accent);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+.action-icon {
+    font-size: var(--font-size-lg);
+}
+
+.action-text {
+    flex: 1;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .content-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard-container {
+        flex-direction: column;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+
+    .page-header {
+        padding: var(--space-lg);
+    }
+
+    .page-title {
+        font-size: var(--font-size-2xl);
+    }
+}
+</style>
