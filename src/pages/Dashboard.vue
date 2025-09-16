@@ -1,16 +1,20 @@
 <script setup lang="ts">
-import { computed, provide, onMounted, ref } from "vue";
+import { computed, provide } from "vue";
 
 import DashboardCard from "../components/DashboardCard.vue";
 import TransactionLog from "../components/TransactionLog.vue";
 import AddTransactionForm from "../components/AddTransactionForm.vue";
-import { type Database } from "../../lib/types/supabase.types";
+import { type NewCsTransaction } from "../../lib/types/supabase.types";
 import supabase from "../../lib/api";
 import { useFlash } from "../composables/useFlash";
 import { useAuth } from "../../lib/authentication";
+import { useAppStore } from "@src/stores/useAppStore";
+import { useUserProfileStore } from "@src/stores";
 
 const Flash = useFlash();
-const { session } = useAuth();
+const Auth = useAuth();
+const App = useAppStore();
+const userProfileStore = useUserProfileStore();
 
 const DASHBOARD_GAP = {
   factor: 1.5,
@@ -32,7 +36,7 @@ const handleAddTransactionClicked = async (transaction: NewCsTransaction) => {
     .insert(transaction)
     .select();
 
-  transactions.value.push(data[0])
+  App.transactions.push(data[0])
 
   if (error) {
     Flash.error(`Failed to add transaction: ${error.message}`);
@@ -48,27 +52,23 @@ const handleDeleteTransactionClicked = async (id: string) => {
     .eq("id", id);
 
   console.debug("response", response);
-    
+
   if (response.status !== 200) {
-    Flash.error(`Failed to delete transaction: ${error.message}`);
+    Flash.error(`Failed to delete transaction: ${response.error?.message}`);
   } else {
     Flash.success("Transaction deleted successfully!");
   }
 };
 
-const transactions = ref<
-  Database["public"]["Tables"]["cs_transaction"]["Row"][]
->([]);
-
 // Computed properties for dashboard statistics
 const totalSpent = computed(() => {
-  return transactions.value.reduce((sum, transaction) => {
+  return App.transactions.reduce((sum, transaction) => {
     return sum + transaction.unit_factor * transaction.unit_price;
   }, 0);
 });
 
 const totalItems = computed(() => {
-  return transactions.value.reduce((sum, transaction) => {
+  return App.transactions.reduce((sum, transaction) => {
     return sum + transaction.unit_factor;
   }, 0);
 });
@@ -84,13 +84,13 @@ const cashoutMargin = computed(() => {
 });
 
 const totalSpentChange = computed(() => {
-  if (transactions.value.length === 0) return "0%";
+  if (App.transactions.length === 0) return "0%";
 
   // Calculate change based on recent transactions (last 7 days)
   const now = new Date();
   const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-  const recentTransactions = transactions.value.filter(
+  const recentTransactions = App.transactions.filter(
     (t) => t.transacted_at && new Date(t.transacted_at) >= weekAgo,
   );
 
@@ -110,13 +110,13 @@ const totalSpentChange = computed(() => {
 });
 
 const steamValueChange = computed(() => {
-  if (transactions.value.length === 0) return "0%";
+  if (App.transactions.length === 0) return "0%";
 
   // Calculate Steam value change based on recent transactions
   const now = new Date();
   const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-  const recentTransactions = transactions.value.filter(
+  const recentTransactions = App.transactions.filter(
     (t) => t.transacted_at && new Date(t.transacted_at) >= weekAgo,
   );
 
@@ -136,13 +136,13 @@ const steamValueChange = computed(() => {
 });
 
 const cashoutMarginChange = computed(() => {
-  if (transactions.value.length === 0) return "0%";
+  if (App.transactions.length === 0) return "0%";
 
   // Calculate cashout margin change based on recent transactions
   const now = new Date();
   const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-  const recentTransactions = transactions.value.filter(
+  const recentTransactions = App.transactions.filter(
     (t) => t.transacted_at && new Date(t.transacted_at) >= weekAgo,
   );
 
@@ -163,13 +163,13 @@ const cashoutMarginChange = computed(() => {
 });
 
 const totalItemsChange = computed(() => {
-  if (transactions.value.length === 0) return "+0";
+  if (App.transactions.length === 0) return "+0";
 
   // Calculate items added in the last 7 days
   const now = new Date();
   const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-  const recentItems = transactions.value
+  const recentItems = App.transactions
     .filter((t) => t.transacted_at && new Date(t.transacted_at) >= weekAgo)
     .reduce((sum, t) => sum + t.unit_factor, 0);
 
@@ -206,6 +206,10 @@ const totalItemsChangeType = computed(() => {
   return change > 0 ? "positive" : change < 0 ? "negative" : "neutral";
 });
 
+const selectedUserProfile = computed(() => {
+  return userProfileStore.userProfiles.find(userProfile => userProfile.user_id === App.selectedUserId);
+})
+
 // Utility function to format currency
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat("de-DE", {
@@ -215,18 +219,6 @@ const formatCurrency = (value: number) => {
     maximumFractionDigits: 2,
   }).format(value);
 };
-
-onMounted(async () => {
-  // Fetch transactions
-  const { data, error } = await supabase.from("cs_transaction").select("*");
-  if (error) {
-    console.error("error fetching transactions", error);
-    Flash.error(`Failed to load transactions: ${error.message}`);
-  } else {
-    console.debug("Successfully fetched transactions", data);
-    transactions.value = data || [];
-  }
-});
 </script>
 
 <template>
@@ -236,9 +228,7 @@ onMounted(async () => {
       <div class="header-content">
         <div class="header-title-section">
           <h1 class="app-title">CS2 Investment Portfolio</h1>
-          <p class="admin-status">
-            🔒 Admin Access
-          </p>
+          <div class="user-display-name">{{ selectedUserProfile?.display_name }}</div>
         </div>
       </div>
     </header>
@@ -246,34 +236,14 @@ onMounted(async () => {
     <!-- Stats Cards -->
     <section class="stats-section">
       <div class="stats-grid">
-        <DashboardCard
-          title="Portfolio"
-          :value="formatCurrency(totalSpent)"
-          :change="totalSpentChange"
-          :change-type="totalSpentChangeType"
-          icon="💰"
-        />
-        <DashboardCard
-          title="Steam Netto"
-          :value="formatCurrency(steamValue)"
-          :change="steamValueChange"
-          :change-type="steamValueChangeType"
-          icon="🎮"
-        />
-        <DashboardCard
-          title="Steam Gewinn"
-          :value="formatCurrency(cashoutMargin)"
-          :change="cashoutMarginChange"
-          :change-type="cashoutMarginChangeType"
-          icon="📈"
-        />
-        <DashboardCard
-          title="Gesamt Items"
-          :value="totalItems.toString()"
-          :change="totalItemsChange"
-          :change-type="totalItemsChangeType"
-          icon="📦"
-        />
+        <DashboardCard title="Portfolio" :value="formatCurrency(totalSpent)" :change="totalSpentChange"
+          :change-type="totalSpentChangeType" icon="💰" />
+        <DashboardCard title="Steam Netto" :value="formatCurrency(steamValue)" :change="steamValueChange"
+          :change-type="steamValueChangeType" icon="🎮" />
+        <DashboardCard title="Steam Gewinn" :value="formatCurrency(cashoutMargin)" :change="cashoutMarginChange"
+          :change-type="cashoutMarginChangeType" icon="📈" />
+        <DashboardCard title="Gesamt Items" :value="totalItems.toString()" :change="totalItemsChange"
+          :change-type="totalItemsChangeType" icon="📦" />
       </div>
     </section>
 
@@ -282,14 +252,12 @@ onMounted(async () => {
       <div class="content-grid">
         <!-- Transactions Panel -->
         <div class="transactions-container">
-          <TransactionLog
-            v-model="transactions"
-            @delete-transaction="handleDeleteTransactionClicked"
-          />
+          <TransactionLog v-model="App.transactions" @delete-transaction="handleDeleteTransactionClicked" />
         </div>
 
         <!-- Side Panel -->
-        <AddTransactionForm @add-transaction="handleAddTransactionClicked" />
+        <AddTransactionForm v-if="Auth.user.id === App.selectedUserId"
+          @add-transaction="handleAddTransactionClicked" />
       </div>
     </section>
   </main>
@@ -323,7 +291,9 @@ onMounted(async () => {
 
 .header-title-section {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
   gap: var(--space-xs);
 }
 
@@ -337,6 +307,23 @@ onMounted(async () => {
   -webkit-text-fill-color: transparent;
   background-clip: text;
   letter-spacing: -0.02em;
+}
+
+.user-display-name {
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  margin: 0;
+  background: linear-gradient(135deg, var(--color-text) 0%, var(--color-accent) 100%);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  display: inline-block;
+  max-width: fit-content;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.02em;
+  font-weight: var(--font-weight-bold);
 }
 
 .session-id {

@@ -13,7 +13,7 @@ export default [
   // TypeScript configuration
   ...configTypeScript(),
 
-  // Prettier configuration (must be last)
+// Prettier configuration (must be last)
   configPrettier,
 
   {
@@ -129,6 +129,25 @@ export default [
       "*.min.js",
       "public/**",
       "tmp/**",
+    // Additional ignores from gitignore
+      ".env*",
+      ".vscode/**",
+      ".idea/**",
+      ".DS_Store",
+      "Thumbs.db",
+      "*.log",
+      "npm-debug.log*",
+      "yarn-debug.log*",
+      "yarn-error.log*",
+      "pids/**",
+      "*.pid",
+      "*.seed",
+      "*.pid.lock",
+      "temp/**",
+      "*.min.css",
+      "*.tsbuildinfo",
+      "supabase/.branches/**",
+      "supabase/.temp/**"
     ],
   },
 ];

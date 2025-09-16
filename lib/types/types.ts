@@ -9,3 +9,8 @@ export type CsTransaction = {
   unit_price: number;
   created_at: string;
 };
+
+export type User = {
+  id: string;
+  email: string;
+}

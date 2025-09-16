@@ -1,9 +1,31 @@
 <script setup lang="ts">
 import type { User } from "@supabase/supabase-js";
+import type { Tables } from "@lib/types/supabase.types";
+import { useUserProfileStore } from "@src/stores";
+import { useAppStore } from "@src/stores";
+import { useFlash } from "@src/composables/useFlash";
+import { useAuth } from "@lib/authentication";
 
-defineProps<{
-  user: User | null;
-}>();
+const { user } = useAuth();
+const userProfileStore = useUserProfileStore();
+const App = useAppStore();
+const Flash = useFlash();
+
+const handleUserProfileClick = (userId: string) => {
+  try {
+    App.isLoading = true;
+    App.selectedUserId = userId;
+    userProfileStore.fetch();
+    App.fetchTransactions(userId);
+    Flash.success("User profile and transactions fetched successfully!");
+    App.isLoading = false;
+  }
+  catch (error) {
+    console.error("An error occurred while fetching user profiles or transactions:", error);
+    Flash.error("An error occurred while fetching user profiles or transactions:", error);
+    App.isLoading = false;
+  }
+}
 
 defineEmits<{
   logout: [];
@@ -18,9 +40,13 @@ defineEmits<{
       </div>
     </div>
     <nav class="sidebar-nav">
-      <a href="#" class="nav-item active" title="CS2 Portfolio">
-        <span class="nav-icon">🎮</span>
-      </a>
+      <template v-for="userProfile in userProfileStore.userProfiles">
+        <a href="#" class="nav-item" :title="userProfile.display_name"
+          :class="{ active: userProfile.user_id === App.selectedUserId }"
+          @click="handleUserProfileClick(userProfile.user_id)">
+          <span class="nav-icon">{{ userProfile.display_name.charAt(0).toUpperCase() }}</span>
+        </a>
+      </template>
     </nav>
 
     <!-- User Details -->
@@ -31,14 +57,7 @@ defineEmits<{
         </div>
       </div>
       <button class="logout-btn" title="Logout" @click="$emit('logout')">
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
           <polyline points="16,17 21,12 16,7" />
           <line x1="21" y1="12" x2="9" y2="12" />
@@ -91,7 +110,7 @@ defineEmits<{
   padding: var(--space-md);
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
+  gap: var(--space-md);
 }
 
 .nav-item {

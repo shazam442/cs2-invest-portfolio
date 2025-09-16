@@ -62,6 +62,7 @@ const validateSession = async () => {
 const isAuthenticated = computed(() => !!user.value);
 const isGuest = computed(() => !user.value);
 
+
 // Authentication methods
 const signIn = async (email: string, password: string) => {
   try {
