@@ -10,6 +10,7 @@ import { useUserProfileStore } from "@src/stores";
 import { useAppStore } from "@src/stores/useAppStore";
 
 const Auth = useAuth();
+const { isLoading, isAuthenticated, user } = Auth;
 const userProfileStore = useUserProfileStore();
 const App = useAppStore();
 
@@ -30,24 +31,24 @@ const handleLogout = async () => {
 
 onMounted(() => {
   // Only fetch data if user is authenticated
-  if (Auth.isAuthenticated.value && Auth.user.value) {
+  if (isAuthenticated.value && user.value) {
     userProfileStore.fetch();
-    App.fetchTransactions(Auth.user.value.id);
-    App.selectedUserId = Auth.user.value.id;
+    App.fetchTransactions(user.value.id);
+    App.selectedUserId = user.value.id;
   }
 })
 </script>
 
 <template>
-  <div v-if="Auth.isLoading" class="loading-container">
+  <div v-if="isLoading" class="loading-container">
     <div class="loading-spinner">Loading...</div>
   </div>
-  <div v-else-if="!Auth.isAuthenticated" class="login-wrapper">
+  <div v-else-if="!isAuthenticated" class="login-wrapper">
     <Login />
     <FlashContainer />
   </div>
-  <div v-else-if="Auth.isAuthenticated" class="dashboard-container">
-    <Sidebar :user="Auth.user" :userProfiles="userProfileStore.userProfiles" @logout="handleLogout" />
+  <div v-else-if="isAuthenticated" class="dashboard-container">
+    <Sidebar :user="user" :userProfiles="userProfileStore.userProfiles" @logout="handleLogout" />
     <Dashboard />
     <FlashContainer />
   </div>
