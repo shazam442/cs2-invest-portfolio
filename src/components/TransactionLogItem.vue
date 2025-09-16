@@ -24,7 +24,7 @@ const latestPriceCheck = computed(() =>
 );
 
 const steamLowestPrice = computed(() => (latestPriceCheck.value as any)?.current_low_price ?? 0);
-const steamMedianPrice = computed(() => (latestPriceCheck.value as any)?.["7_day_mean_price"] ?? 0);
+const steamMedianPrice = computed(() => (latestPriceCheck.value as any)?.["7d_sales_mean_price"] ?? 0);
 const steamCheckedAt = computed(() =>
   latestPriceCheck.value?.created_at
     ? new Date(latestPriceCheck.value.created_at).toLocaleString("de-DE")

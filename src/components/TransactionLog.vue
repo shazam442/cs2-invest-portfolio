@@ -87,12 +87,7 @@ const handleCheckPricesClicked = async () => {
       const jitter = 300 + Math.floor(Math.random() * 700); // 300-1000ms
       await new Promise((resolve) => setTimeout(resolve, jitter + dynamicDelay));
 
-      const result = await getItemMeanPrice7d(name, {
-        appId: 730,
-        retries: 4,
-        baseDelayMs: 900,
-        maxDelayMs: 6000,
-      });
+      const result = await getItemMeanPrice7d(name);
       const volumeNum = result.volume7d || 0;
       if (!result.success) {
         if (result.rateLimited) {

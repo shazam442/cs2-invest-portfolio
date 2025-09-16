@@ -10,39 +10,10 @@ const newTransactionOrigin = ref("steam");
 const newTransactionDate = ref(new Date().toISOString().split('T')[0]);
 const formKey = ref(0);
 
-// Debug: Log initial values
-onMounted(() => {
-  console.debug("Form initial values:", {
-    name: newTransactionName.value,
-    amount: newTransactionAmount.value,
-    price: newTransactionPrice.value,
-    origin: newTransactionOrigin.value,
-    date: newTransactionDate.value
-  });
-  
-  // Force set the form values after mount to ensure they're displayed
-  nextTick(() => {
-    // Re-set the values to ensure they're properly bound
-    forceSetDefaults();
-    
-    const amountInput = document.getElementById('newTransactionAmount') as HTMLInputElement;
-    const priceInput = document.getElementById('newTransactionPrice') as HTMLInputElement;
-    const originInput = document.getElementById('newTransactionOrigin') as HTMLInputElement;
-    const dateInput = document.getElementById('newTransactionDate') as HTMLInputElement;
-    
-    console.debug("DOM input values after force set:", {
-      amount: amountInput?.value,
-      price: priceInput?.value,
-      origin: originInput?.value,
-      date: dateInput?.value
-    });
-  });
-});
-
 const emit = defineEmits(["addTransaction"]);
 
 // Watch for changes to debug any unexpected resets
-watch([newTransactionAmount, newTransactionPrice, newTransactionOrigin, newTransactionDate], 
+watch([newTransactionAmount, newTransactionPrice, newTransactionOrigin, newTransactionDate],
   ([amount, price, origin, date], [oldAmount, oldPrice, oldOrigin, oldDate]) => {
     console.debug("Form values changed:", {
       amount: { from: oldAmount, to: amount },
@@ -63,7 +34,7 @@ const handleAddTransactionClicked = () => {
   };
 
   emit("addTransaction", transaction);
-  
+
   // Clear form after successful submission
   clearForm();
 };
@@ -94,72 +65,35 @@ const forceSetDefaults = () => {
       </p>
     </div>
 
-    <form
-      class="form"
-      @submit.prevent.stop="handleAddTransactionClicked"
-      :key="formKey"
-    >
+    <form class="form" @submit.prevent.stop="handleAddTransactionClicked" :key="formKey">
       <div class="form-grid">
         <div class="form-group">
           <label for="newTransactionName" class="label">Item Name</label>
-          <FuzzySearchInput
-            id="newTransactionName"
-            v-model="newTransactionName"
-            placeholder="z.B. AK-47 Redline"
-            :required="true"
-            :items="[]"
-            :max-results="10"
-          />
+          <FuzzySearchInput id="newTransactionName" v-model="newTransactionName" placeholder="z.B. AK-47 Redline"
+            :required="true" :items="[]" :max-results="10" />
         </div>
 
         <div class="form-group">
           <label for="newTransactionAmount" class="label">Anzahl</label>
-          <input
-            id="newTransactionAmount"
-            v-model="newTransactionAmount"
-            type="number"
-            class="input"
-            placeholder="1"
-            min="1"
-            required
-          />
+          <input id="newTransactionAmount" v-model="newTransactionAmount" type="number" class="input" placeholder="1"
+            min="1" required />
         </div>
 
         <div class="form-group">
           <label for="newTransactionPrice" class="label">Einzelpreis (€)</label>
-          <input
-            id="newTransactionPrice"
-            v-model="newTransactionPrice"
-            type="number"
-            class="input"
-            placeholder="0,00"
-            step="0.01"
-            min="0"
-            required
-          />
+          <input id="newTransactionPrice" v-model="newTransactionPrice" type="number" class="input" placeholder="0,00"
+            step="0.01" min="0" required />
         </div>
 
         <div class="form-group">
           <label for="newTransactionOrigin" class="label">Herkunft</label>
-          <input
-            id="newTransactionOrigin"
-            v-model="newTransactionOrigin"
-            type="text"
-            class="input"
-            placeholder="z.B. steam"
-            required
-          />
+          <input id="newTransactionOrigin" v-model="newTransactionOrigin" type="text" class="input"
+            placeholder="z.B. steam" required />
         </div>
 
         <div class="form-group">
           <label for="newTransactionDate" class="label">Kaufdatum</label>
-          <input
-            id="newTransactionDate"
-            v-model="newTransactionDate"
-            type="date"
-            class="input"
-            required
-          />
+          <input id="newTransactionDate" v-model="newTransactionDate" type="date" class="input" required />
         </div>
 
         <div class="form-group form-actions">

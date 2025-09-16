@@ -68,9 +68,9 @@ export async function getItemPrice(
 ): Promise<ItemPriceResult> {
   const appId = options?.appId ?? DEFAULT_APP_ID;
   const currency = options?.currency ?? DEFAULT_CURRENCY;
-  const retries = options?.retries ?? 3;
-  const baseDelayMs = options?.baseDelayMs ?? 800;
-  const maxDelayMs = options?.maxDelayMs ?? 5000;
+  const retries = options?.retries ?? 1;
+  const baseDelayMs = options?.baseDelayMs ?? 2000;
+  const maxDelayMs = options?.maxDelayMs ?? 360000;
 
   const endpoint = `/steam/market/priceoverview/?appid=${encodeURIComponent(
     String(appId)
@@ -128,9 +128,9 @@ export async function getItemMeanPrice7d(
   options?: { appId?: number; signal?: AbortSignal; retries?: number; baseDelayMs?: number; maxDelayMs?: number }
 ): Promise<{ success: boolean; meanPrice7d: number | null; volume7d: number; rateLimited?: boolean }> {
   const appId = options?.appId ?? DEFAULT_APP_ID;
-  const retries = options?.retries ?? 3;
-  const baseDelayMs = options?.baseDelayMs ?? 1200;
-  const maxDelayMs = options?.maxDelayMs ?? 20000;
+  const retries = options?.retries ?? 1;
+  const baseDelayMs = options?.baseDelayMs ?? 2000;
+  const maxDelayMs = options?.maxDelayMs ?? 360000;
 
   const endpoint = `/steam/market/pricehistory?appid=${encodeURIComponent(
     String(appId)
