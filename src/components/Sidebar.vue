@@ -4,6 +4,10 @@ import type { User } from '@supabase/supabase-js'
 defineProps<{
     user: User | null
 }>()
+
+defineEmits<{
+    logout: []
+}>()
 </script>
 
 <template>
@@ -32,6 +36,13 @@ defineProps<{
                 <div class="user-name">{{ user.email || 'User' }}</div>
                 <div class="user-status">Online</div>
             </div>
+            <button @click="$emit('logout')" class="logout-btn" title="Logout">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16,17 21,12 16,7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+            </button>
         </div>
     </aside>
 </template>
@@ -174,6 +185,39 @@ defineProps<{
     display: inline-block;
 }
 
+.logout-btn {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.logout-btn:hover {
+    background: #ef4444;
+    color: white;
+    border-color: #ef4444;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
+}
+
+.logout-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(239, 68, 68, 0.2);
+}
+
+.logout-btn svg {
+    flex-shrink: 0;
+}
+
 /* Responsive Design */
 @media (max-width: 1024px) {
     .sidebar {
@@ -212,6 +256,16 @@ defineProps<{
         width: 32px;
         height: 32px;
         font-size: var(--font-size-sm);
+    }
+
+    .logout-btn {
+        width: 28px;
+        height: 28px;
+    }
+
+    .logout-btn svg {
+        width: 14px;
+        height: 14px;
     }
 }
 </style>

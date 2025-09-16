@@ -7,7 +7,6 @@ import AddTransactionForm from '../components/AddTransactionForm.vue';
 import Sidebar from '../components/Sidebar.vue';
 import { type Database } from "../../lib/supabase.types"
 import supabase from "../../lib/api"
-import type { User } from '@supabase/supabase-js'
 
 
 const DASHBOARD_GAP = {
@@ -33,7 +32,6 @@ const handleDeleteTransactionClicked = (id: string) => {
 }
 
 const transactions = ref<Database['public']['Tables']['cs_transaction']['Row'][]>([]);
-const currentUser = ref<User | null>(null);
 
 // Computed properties for dashboard statistics
 const totalSpent = computed(() => {
@@ -175,10 +173,6 @@ const formatCurrency = (value: number) => {
 };
 
 onMounted(async () => {
-    // Fetch current user
-    const { data: { user } } = await supabase.auth.getUser();
-    currentUser.value = user;
-
     // Fetch transactions
     const { data, error } = await supabase.from('cs_transaction').select('*');
     if (error) {
@@ -191,57 +185,42 @@ onMounted(async () => {
 </script>
 
 <template>
-    <div class="dashboard-container">
-        <!-- Sidebar -->
-        <Sidebar :user="currentUser" />
+    <main class="main-content">
+        <!-- Stats Cards -->
+        <section class="stats-section">
+            <div class="stats-grid">
+                <DashboardCard title="Ausgaben" :value="formatCurrency(totalSpent)" :change="totalSpentChange"
+                    :changeType="totalSpentChangeType" icon="💰" />
+                <DashboardCard title="Steam Netto" :value="formatCurrency(steamValue)" :change="steamValueChange"
+                    :changeType="steamValueChangeType" icon="🎮" />
+                <DashboardCard title="Steam Gewinn" :value="formatCurrency(cashoutMargin)" :change="cashoutMarginChange"
+                    :changeType="cashoutMarginChangeType" icon="📈" />
+                <DashboardCard title="Gesamt Items" :value="totalItems.toString()" :change="totalItemsChange"
+                    :changeType="totalItemsChangeType" icon="📦" />
+            </div>
+        </section>
 
-        <!-- Main Content -->
-        <main class="main-content">
-
-            <!-- Stats Cards -->
-            <section class="stats-section">
-                <div class="stats-grid">
-                    <DashboardCard title="Ausgaben" :value="formatCurrency(totalSpent)" :change="totalSpentChange"
-                        :changeType="totalSpentChangeType" icon="💰" />
-                    <DashboardCard title="Steam Netto" :value="formatCurrency(steamValue)" :change="steamValueChange"
-                        :changeType="steamValueChangeType" icon="🎮" />
-                    <DashboardCard title="Steam Gewinn" :value="formatCurrency(cashoutMargin)"
-                        :change="cashoutMarginChange" :changeType="cashoutMarginChangeType" icon="📈" />
-                    <DashboardCard title="Gesamt Items" :value="totalItems.toString()" :change="totalItemsChange"
-                        :changeType="totalItemsChangeType" icon="📦" />
+        <!-- Content Grid -->
+        <section class="content-section">
+            <div class="content-grid">
+                <!-- Transactions Panel -->
+                <div class="transactions-container">
+                    <TransactionLog @deleteTransaction="handleDeleteTransactionClicked" v-model="transactions" />
                 </div>
-            </section>
 
-            <!-- Content Grid -->
-            <section class="content-section">
-                <div class="content-grid">
-                    <!-- Transactions Panel -->
-                    <div class="transactions-container">
-                        <TransactionLog @deleteTransaction="handleDeleteTransactionClicked" v-model="transactions" />
-                    </div>
-
-                    <!-- Side Panel -->
-                    <AddTransactionForm @addTransaction="handleAddTransactionClicked" />
-                </div>
-            </section>
-        </main>
-    </div>
+                <!-- Side Panel -->
+                <AddTransactionForm @addTransaction="handleAddTransactionClicked" />
+            </div>
+        </section>
+    </main>
 </template>
 
 <style scoped>
-.dashboard-container {
-    display: flex;
-    height: 100vh;
-    background: var(--color-bg-muted);
-}
-
-
 /* Main Content */
 .main-content {
     flex: 1;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
 }
 
 .page-header {
@@ -287,7 +266,6 @@ onMounted(async () => {
 .content-section {
     flex: 1;
     padding: 0 var(--space-xl) var(--space-xl);
-    overflow: hidden;
 }
 
 .content-grid {
@@ -304,7 +282,6 @@ onMounted(async () => {
     box-shadow: var(--shadow-sm);
     display: flex;
     flex-direction: column;
-    overflow: hidden;
 }
 
 .main-panel {
@@ -395,10 +372,6 @@ onMounted(async () => {
 }
 
 @media (max-width: 768px) {
-    .dashboard-container {
-        flex-direction: column;
-    }
-
     .stats-grid {
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     }

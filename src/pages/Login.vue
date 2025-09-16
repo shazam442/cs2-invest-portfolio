@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
-import supabase from '../../lib/api'
+import { useAuth } from '../../lib/authentication'
 
+const { signIn, redirectToDashboard } = useAuth()
 const isLoading = ref(false)
 const errorMessage = ref('')
 
@@ -46,17 +47,14 @@ const handleLogin = async () => {
     errorMessage.value = ''
 
     try {
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email: formData.email,
-            password: formData.password
-        })
+        const { data, error } = await signIn(formData.email, formData.password)
 
         if (error) {
-            errorMessage.value = error.message
+            errorMessage.value = error instanceof Error ? error.message : 'An error occurred during login'
         } else {
-            // Login successful - redirect or emit event
+            // Login successful - redirect to dashboard
             console.log('Login successful:', data)
-            // You can add navigation logic here or emit an event to parent
+            redirectToDashboard()
         }
     } catch (err) {
         errorMessage.value = 'An unexpected error occurred. Please try again.'

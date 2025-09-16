@@ -2,7 +2,7 @@
 import { ref, defineEmits } from 'vue';
 
 const newTransactionName = ref('');
-const newTransactionAmount = ref(0);
+const newTransactionAmount = ref(1);
 const newTransactionPrice = ref(0);
 const newTransactionOrigin = ref('');
 const newTransactionDate = ref('');
@@ -23,7 +23,7 @@ const handleAddTransactionClicked = () => {
 
 const clearForm = () => {
     newTransactionName.value = '';
-    newTransactionAmount.value = 0;
+    newTransactionAmount.value = 1;
     newTransactionPrice.value = 0;
     newTransactionOrigin.value = '';
     newTransactionDate.value = '';
