@@ -80,14 +80,24 @@ const handleCheckPricesClicked = async () => {
   isCheckingPrices.value = true;
   try {
     for (const name of uniqueItems.value) {
-      const result = await getItemPrice(name, { currency: 3, appId: 730 });
+      // Randomized small delay before each call to spread requests
+      const jitter = 200 + Math.floor(Math.random() * 400); // 200-600ms
+      await new Promise((resolve) => setTimeout(resolve, jitter));
+
+      const result = await getItemPrice(name, {
+        currency: 3,
+        appId: 730,
+        retries: 4,
+        baseDelayMs: 900,
+        maxDelayMs: 6000,
+      });
       await priceChecks.add({
         market_hash_name: name,
         lowest_price: result.lowestPrice ?? null,
         median_price: result.medianPrice ?? null,
       });
-      // Throttle to avoid Steam rate limits
-      await new Promise((resolve) => setTimeout(resolve, 1100));
+      // Base throttle to avoid Steam rate limits
+      await new Promise((resolve) => setTimeout(resolve, 900));
     }
   } catch (err) {
     console.error("Error checking prices:", err);

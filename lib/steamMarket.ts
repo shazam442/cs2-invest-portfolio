@@ -36,12 +36,34 @@ function parseSteamPriceString(input?: string | null): number | null {
   return Number.isFinite(value) ? value : null;
 }
 
+export interface GetItemPriceOptions {
+  appId?: number;
+  currency?: SteamCurrencyCode;
+  signal?: AbortSignal;
+  retries?: number; // retry on 429/5xx/network errors
+  baseDelayMs?: number; // base backoff delay
+  maxDelayMs?: number; // max backoff delay
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function backoffDelay(attempt: number, baseMs: number, maxMs: number): number {
+  // Exponential backoff with jitter (full jitter)
+  const exp = Math.min(maxMs, baseMs * 2 ** (attempt - 1));
+  return Math.floor(Math.random() * exp);
+}
+
 export async function getItemPrice(
   marketHashName: string,
-  options?: { appId?: number; currency?: SteamCurrencyCode; signal?: AbortSignal }
+  options?: GetItemPriceOptions
 ): Promise<ItemPriceResult> {
   const appId = options?.appId ?? DEFAULT_APP_ID;
   const currency = options?.currency ?? DEFAULT_CURRENCY;
+  const retries = options?.retries ?? 3;
+  const baseDelayMs = options?.baseDelayMs ?? 800;
+  const maxDelayMs = options?.maxDelayMs ?? 5000;
 
   const endpoint = `/steam/market/priceoverview/?appid=${encodeURIComponent(
     String(appId)
@@ -49,18 +71,35 @@ export async function getItemPrice(
     marketHashName
   )}`;
 
-  const response = await fetch(endpoint, { method: "GET", signal: options?.signal });
-  if (!response.ok) {
-    return { success: false, lowestPrice: null, medianPrice: null, raw: { success: false } };
+  let attempt = 0;
+  for (;;) {
+    try {
+      const response = await fetch(endpoint, { method: "GET", signal: options?.signal });
+      if (!response.ok) {
+        // Retry on rate limit or server errors
+        if ((response.status === 429 || response.status >= 500) && attempt < retries) {
+          attempt += 1;
+          await sleep(backoffDelay(attempt, baseDelayMs, maxDelayMs));
+          continue;
+        }
+        return { success: false, lowestPrice: null, medianPrice: null, raw: { success: false } };
+      }
+      const data = (await response.json()) as PriceOverviewResponse;
+      return {
+        success: data.success === true,
+        lowestPrice: parseSteamPriceString(data.lowest_price),
+        medianPrice: parseSteamPriceString(data.median_price),
+        raw: data,
+      };
+    } catch (_err) {
+      if (attempt < retries) {
+        attempt += 1;
+        await sleep(backoffDelay(attempt, baseDelayMs, maxDelayMs));
+        continue;
+      }
+      return { success: false, lowestPrice: null, medianPrice: null, raw: { success: false } };
+    }
   }
-  const data = (await response.json()) as PriceOverviewResponse;
-
-  return {
-    success: data.success === true,
-    lowestPrice: parseSteamPriceString(data.lowest_price),
-    medianPrice: parseSteamPriceString(data.median_price),
-    raw: data,
-  };
 }
 
 export default {
