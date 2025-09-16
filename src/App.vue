@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // App.vue now serves as the main container with conditional rendering
-import { onMounted, ref } from "vue";
+import { onMounted, ref, watch } from "vue";
 import { useAuth } from "../lib/authentication";
 import Sidebar from "./components/Sidebar.vue";
 import FlashContainer from "./components/FlashContainer.vue";
@@ -37,6 +37,18 @@ onMounted(() => {
     App.selectedUserId = user.value.id;
   }
 })
+
+// React to authentication changes (login/logout) after mount
+watch([isAuthenticated, user], ([authed, currentUser]) => {
+  if (authed && currentUser) {
+    userProfileStore.fetch();
+    App.fetchTransactions(currentUser.id);
+    App.selectedUserId = currentUser.id;
+  } else {
+    App.selectedUserId = undefined as unknown as string;
+    App.transactions = [] as any;
+  }
+});
 </script>
 
 <template>
