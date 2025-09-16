@@ -29,10 +29,12 @@ const handleLogout = async () => {
 };
 
 onMounted(() => {
-  userProfileStore.fetch();
-  App.fetchTransactions(Auth.user.value!.id);
-
-  App.selectedUserId = Auth.user.value!.id
+  // Only fetch data if user is authenticated
+  if (Auth.isAuthenticated.value && Auth.user.value) {
+    userProfileStore.fetch();
+    App.fetchTransactions(Auth.user.value.id);
+    App.selectedUserId = Auth.user.value.id;
+  }
   App.isLoading = false;
 })
 </script>
