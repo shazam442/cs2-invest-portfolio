@@ -1,5 +1,4 @@
 import { ref, computed } from "vue";
-import { useRouter } from "vue-router";
 import supabase from "./api";
 import type { User, Session } from "@supabase/supabase-js";
 
@@ -73,48 +72,9 @@ const signOut = async () => {
   }
 };
 
-// Route guard function
-const requireAuth = (_to: any, _from: any, next: any) => {
-  if (isLoading.value) {
-    // Wait for auth to initialize
-    const unsubscribe = supabase.auth.onAuthStateChange(() => {
-      unsubscribe.data.subscription.unsubscribe();
-      if (isAuthenticated.value) {
-        next();
-      } else {
-        next("/login");
-      }
-    });
-  } else if (isAuthenticated.value) {
-    next();
-  } else {
-    next("/login");
-  }
-};
-
-// Guest-only route guard (for login page)
-const requireGuest = (_to: any, _from: any, next: any) => {
-  if (isLoading.value) {
-    // Wait for auth to initialize
-    const unsubscribe = supabase.auth.onAuthStateChange(() => {
-      unsubscribe.data.subscription.unsubscribe();
-      if (isGuest.value) {
-        next();
-      } else {
-        next("/");
-      }
-    });
-  } else if (isGuest.value) {
-    next();
-  } else {
-    next("/");
-  }
-};
 
 // Export authentication composable
 export const useAuth = () => {
-  const router = useRouter();
-
   return {
     // State
     user: computed(() => user.value),
@@ -128,14 +88,7 @@ export const useAuth = () => {
     signUp,
     signOut,
 
-    // Navigation helpers
-    redirectToLogin: () => router.push("/login"),
-    redirectToDashboard: () => router.push("/"),
-
     // Initialize auth (call this in main.ts)
     initAuth,
   };
 };
-
-// Export route guards
-export { requireAuth, requireGuest };

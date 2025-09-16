@@ -2,7 +2,7 @@
 import { ref, reactive } from "vue";
 import { useAuth } from "../../lib/authentication";
 
-const { signIn, redirectToDashboard } = useAuth();
+const { signIn } = useAuth();
 const isLoading = ref(false);
 const errorMessage = ref("");
 
@@ -55,9 +55,8 @@ const handleLogin = async () => {
           ? error.message
           : "An error occurred during login";
     } else {
-      // Login successful - redirect to dashboard
+      // Login successful - the App.vue will automatically show the dashboard
       console.log("Login successful:", data);
-      redirectToDashboard();
     }
   } catch (err) {
     errorMessage.value = "An unexpected error occurred. Please try again.";
