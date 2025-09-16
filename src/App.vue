@@ -13,9 +13,13 @@ const handleLogout = async () => {
     const { error } = await signOut();
     if (error) {
       console.error("Error signing out:", error);
+      // The signOut function now handles session clearing even on error,
+      // so the user will be logged out regardless
     }
   } catch (err) {
     console.error("Unexpected error during logout:", err);
+    // Even if there's an unexpected error, the user should still be logged out
+    // The signOut function handles this case
   }
 };
 </script>
