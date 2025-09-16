@@ -132,14 +132,24 @@ export async function getItemMeanPrice7d(
   const baseDelayMs = options?.baseDelayMs ?? 1200;
   const maxDelayMs = options?.maxDelayMs ?? 20000;
 
-  const endpoint = `/steam/market/pricehistory/?appid=${encodeURIComponent(
+  const endpoint = `/steam/market/pricehistory?appid=${encodeURIComponent(
     String(appId)
   )}&market_hash_name=${encodeURIComponent(marketHashName)}`;
 
   let attempt = 0;
   for (;;) {
     try {
-      const response = await fetch(endpoint, { method: "GET", signal: options?.signal });
+      const refererUrl = `https://steamcommunity.com/market/listings/${encodeURIComponent(String(appId))}/${encodeURIComponent(marketHashName)}`;
+      const response = await fetch(endpoint, {
+        method: "GET",
+        signal: options?.signal,
+        headers: {
+          Accept: "application/json, text/javascript, */*; q=0.01",
+          "X-Requested-With": "XMLHttpRequest",
+          Referer: refererUrl,
+          "Cache-Control": "no-cache",
+        },
+      });
       if (!response.ok) {
         if ((response.status === 429 || response.status >= 500) && attempt < retries) {
           attempt += 1;
