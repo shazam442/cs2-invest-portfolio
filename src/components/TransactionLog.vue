@@ -4,6 +4,8 @@ import supabase from "../../lib/api";
 import { type Database } from "../../lib/types/supabase.types";
 import TransactionLogItem from "./TransactionLogItem.vue";
 import { formatDate, formatCurrency } from "../../lib/utils";
+import { usePriceCheckStore } from "@src/stores";
+import { getItemPrice } from "@lib/steamMarket";
 
 const transactions =
   defineModel<Database["public"]["Tables"]["cs_transaction"]["Row"][]>();
@@ -63,10 +65,32 @@ const sortedAndFilteredTransactions = computed(() => {
 });
 
 const uniqueItems = computed(() => {
-  if (!sortedAndFilteredTransactions.value) return [];
-  const items = [...new Set(sortedAndFilteredTransactions.value.map((t) => t.name))];
-  return Items
+  if (!transactions.value) return [] as string[];
+  const names = [...new Set(transactions.value.map((t) => t.name))];
+  return names.sort((a, b) => a.localeCompare(b));
 })
+
+const priceChecks = usePriceCheckStore();
+const isCheckingPrices = ref(false);
+
+const handleCheckPricesClicked = async () => {
+  if (!uniqueItems.value.length || isCheckingPrices.value) return;
+  isCheckingPrices.value = true;
+  try {
+    for (const name of uniqueItems.value) {
+      const result = await getItemPrice(name, { currency: 3, appId: 730 });
+      await priceChecks.add({
+        market_hash_name: name,
+        lowest_price: result.lowestPrice ?? null,
+        median_price: result.medianPrice ?? null,
+      });
+    }
+  } catch (err) {
+    console.error("Error checking prices:", err);
+  } finally {
+    isCheckingPrices.value = false;
+  }
+};
 
 const uniqueOrigins = computed(() => {
   if (!transactions.value) return [];
@@ -112,23 +136,44 @@ const toggleFilters = () => {
           <span class="log-count">{{ totalItems }} Items | {{ sortedAndFilteredTransactions.length }} Transaktionen</span> 
         </div>
       </div>
-      <button
-        class="filter-toggle-btn"
-        :class="{ active: showFilters }"
-        @click="toggleFilters"
-      >
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
+      <div class="header-actions">
+        <button
+          class="filter-toggle-btn"
+          :disabled="isCheckingPrices"
+          @click="handleCheckPricesClicked"
         >
-          <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46" />
-        </svg>
-        Filter
-      </button>
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 6v6l4 2" />
+          </svg>
+          {{ isCheckingPrices ? 'Prüfe Preise…' : 'Preis-Check' }}
+        </button>
+
+        <button
+          class="filter-toggle-btn"
+          :class="{ active: showFilters }"
+          @click="toggleFilters"
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46" />
+          </svg>
+          Filter
+        </button>
+      </div>
     </div>
 
     <!-- Filters and Sorting -->

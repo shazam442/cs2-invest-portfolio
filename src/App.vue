@@ -7,12 +7,14 @@ import FlashContainer from "./components/FlashContainer.vue";
 import Login from "./pages/Login.vue";
 import Dashboard from "./pages/Dashboard.vue";
 import { useUserProfileStore } from "@src/stores";
+import { usePriceCheckStore } from "@src/stores";
 import { useAppStore } from "@src/stores/useAppStore";
 
 const Auth = useAuth();
 const { isLoading, isAuthenticated, user } = Auth;
 const userProfileStore = useUserProfileStore();
 const App = useAppStore();
+const PriceChecks = usePriceCheckStore();
 
 const handleLogout = async () => {
   try {
@@ -35,6 +37,7 @@ onMounted(() => {
     userProfileStore.fetch();
     App.fetchTransactions(user.value.id);
     App.selectedUserId = user.value.id;
+    PriceChecks.fetch();
   }
 })
 
@@ -44,6 +47,7 @@ watch([isAuthenticated, user], ([authed, currentUser]) => {
     userProfileStore.fetch();
     App.fetchTransactions(currentUser.id);
     App.selectedUserId = currentUser.id;
+    PriceChecks.fetch();
   } else {
     App.selectedUserId = undefined as unknown as string;
     App.transactions = [] as any;
