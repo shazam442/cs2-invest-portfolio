@@ -62,6 +62,12 @@ const sortedAndFilteredTransactions = computed(() => {
   });
 });
 
+const uniqueItems = computed(() => {
+  if (!sortedAndFilteredTransactions.value) return [];
+  const items = [...new Set(sortedAndFilteredTransactions.value.map((t) => t.name))];
+  return Items
+})
+
 const uniqueOrigins = computed(() => {
   if (!transactions.value) return [];
   const origins = [...new Set(transactions.value.map((t) => t.origin))];

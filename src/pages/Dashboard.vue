@@ -11,6 +11,7 @@ import { useAuth } from "../../lib/authentication";
 import { useAppStore } from "@src/stores/useAppStore";
 import { useUserProfileStore } from "@src/stores";
 
+
 const Flash = useFlash();
 const Auth = useAuth();
 const App = useAppStore();
@@ -210,6 +211,10 @@ const selectedUserProfile = computed(() => {
   return userProfileStore.userProfiles.find(userProfile => userProfile.user_id === App.selectedUserId);
 })
 
+const isOwnProfile = computed(() => {
+  return Auth.user.value?.id === App.selectedUserId;
+});
+
 // Utility function to format currency
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat("de-DE", {
@@ -256,8 +261,7 @@ const formatCurrency = (value: number) => {
         </div>
 
         <!-- Side Panel -->
-        <AddTransactionForm v-if="Auth.user.id === App.selectedUserId"
-          @add-transaction="handleAddTransactionClicked" />
+        <AddTransactionForm v-if="isOwnProfile" @add-transaction="handleAddTransactionClicked" />
       </div>
     </section>
   </main>

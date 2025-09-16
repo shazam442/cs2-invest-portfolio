@@ -79,6 +79,36 @@ export type Database = {
         }
         Relationships: []
       }
+      price_check: {
+        Row: {
+          created_at: string
+          id: number
+          lowest_price: number
+          market_hash_name: string
+          median_price: number
+          origin: string
+          volume: number
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          lowest_price: number
+          market_hash_name: string
+          median_price: number
+          origin: string
+          volume: number
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          lowest_price?: number
+          market_hash_name?: string
+          median_price?: number
+          origin?: string
+          volume?: number
+        }
+        Relationships: []
+      }
       user_profile: {
         Row: {
           created_at: string
