@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, defineEmits } from "vue";
 import { NewCsTransaction } from "../../lib/types/types";
+import FuzzySearchInput from "./FuzzySearchInput.vue";
 
 const newTransactionName = ref("");
 const newTransactionAmount = ref(1);
@@ -48,13 +49,13 @@ const clearForm = () => {
       <div class="form-grid">
         <div class="form-group">
           <label for="newTransactionName" class="label">Item Name</label>
-          <input
+          <FuzzySearchInput
             id="newTransactionName"
             v-model="newTransactionName"
-            type="text"
-            class="input"
             placeholder="z.B. AK-47 Redline"
-            required
+            :required="true"
+            :items="[]"
+            :max-results="10"
           />
         </div>
 

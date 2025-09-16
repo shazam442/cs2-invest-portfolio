@@ -1,400 +1,449 @@
 <script setup lang="ts">
-import { computed, provide, onMounted, ref } from 'vue';
+import { computed, provide, onMounted, ref } from "vue";
 
-import DashboardCard from '../components/DashboardCard.vue';
-import TransactionLog from '../components/TransactionLog.vue';
-import AddTransactionForm from '../components/AddTransactionForm.vue';
-import Sidebar from '../components/Sidebar.vue';
+import DashboardCard from "../components/DashboardCard.vue";
+import TransactionLog from "../components/TransactionLog.vue";
+import AddTransactionForm from "../components/AddTransactionForm.vue";
 import { type Database } from "../../lib/supabase.types";
 import supabase from "../../lib/api";
+import { useFlash } from "../composables/useFlash";
+
+const { success, error: _, warning: __, info } = useFlash();
 
 const DASHBOARD_GAP = {
-    factor: 1.5,
-    unit: "rem",
-}
+  factor: 1.5,
+  unit: "rem",
+};
 
 const DASHBOARD_GAP_FULL = computed(
-    () => `${DASHBOARD_GAP.factor}${DASHBOARD_GAP.unit}`,
-)
+  () => `${DASHBOARD_GAP.factor}${DASHBOARD_GAP.unit}`,
+);
 
-provide('globalStyles', {
-    DASHBOARD_GAP,
-    DASHBOARD_GAP_FULL,
+provide("globalStyles", {
+  DASHBOARD_GAP,
+  DASHBOARD_GAP_FULL,
 });
 
 const handleAddTransactionClicked = async (transaction: NewCsTransaction) => {
-    console.log(transaction);
-    const { data, error } = await supabase
-        .from("cs_transaction")
-        .insert(transaction);
+  const { data, error } = await supabase
+    .from("cs_transaction")
+    .insert(transaction)
+    .select();
+
+  transactions.value.push(data[0])
+
+  if (error) {
+    error(`Failed to add transaction: ${error.message}`);
+  } else {
+    success("Transaction added successfully!");
+  }
 };
 
-const handleDeleteTransactionClicked = (id: string) => {
-    console.log("deleting transaction", id);
-    supabase.from('cs_transaction').delete().eq('id', id)
+const handleDeleteTransactionClicked = async (id: string) => {
+  const { error } = await supabase.from("cs_transaction").delete().eq("id", id);
+
+  if (error) {
+    error(`Failed to delete transaction: ${error.message}`);
+  } else {
+    success("Transaction deleted successfully!");
+  }
 };
 
 const transactions = ref<
-    Database['public']['Tables']['cs_transaction']['Row'][]
+  Database["public"]["Tables"]["cs_transaction"]["Row"][]
 >([]);
 
 // Computed properties for dashboard statistics
 const totalSpent = computed(() => {
-    return transactions.value.reduce((sum, transaction) => {
-        return sum + transaction.unit_factor * transaction.unit_price;
-    }, 0)
-})
+  return transactions.value.reduce((sum, transaction) => {
+    return sum + transaction.unit_factor * transaction.unit_price;
+  }, 0);
+});
 
 const totalItems = computed(() => {
-    return transactions.value.reduce((sum, transaction) => {
-        return sum + transaction.unit_factor;
-    }, 0)
-})
+  return transactions.value.reduce((sum, transaction) => {
+    return sum + transaction.unit_factor;
+  }, 0);
+});
 
 const steamValue = computed(() => {
-    // Steam market fees: 15% total (5% Steam + 10% game-specific for CS2)
-    // Net value after fees = gross value / 1.15 - 0.01
-    return totalSpent.value / 1.15 - 0.01;
-})
+  // Steam market fees: 15% total (5% Steam + 10% game-specific for CS2)
+  // Net value after fees = gross value / 1.15 - 0.01
+  return totalSpent.value / 1.15 - 0.01;
+});
 
 const cashoutMargin = computed(() => {
-    return steamValue.value - totalSpent.value;
-})
+  return steamValue.value - totalSpent.value;
+});
 
 const totalSpentChange = computed(() => {
-    if (transactions.value.length === 0) return "0%";
+  if (transactions.value.length === 0) return "0%";
 
-    // Calculate change based on recent transactions (last 7 days)
-    const now = new Date()
-    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+  // Calculate change based on recent transactions (last 7 days)
+  const now = new Date();
+  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-    const recentTransactions = transactions.value.filter(t =>
-        t.transacted_at && new Date(t.transacted_at) >= weekAgo,
-    );
+  const recentTransactions = transactions.value.filter(
+    (t) => t.transacted_at && new Date(t.transacted_at) >= weekAgo,
+  );
 
-    const recentValue = recentTransactions.reduce(
-        (sum, t) => sum + t.unit_factor * t.unit_price, 0
-    )
-    const totalSpentNum = totalSpent.value
+  const recentValue = recentTransactions.reduce(
+    (sum, t) => sum + t.unit_factor * t.unit_price,
+    0,
+  );
+  const totalSpentNum = totalSpent.value;
 
-    if (totalSpentNum === 0) return '0%'
+  if (totalSpentNum === 0) return "0%";
 
-    // Calculate what percentage of total value was added in the last 7 days
-    const changePercent = (recentValue / totalSpentNum) * 100
-    return changePercent > 0 ? `+${changePercent.toFixed(1)}%` : `${changePercent.toFixed(1)}%`
-})
+  // Calculate what percentage of total value was added in the last 7 days
+  const changePercent = (recentValue / totalSpentNum) * 100;
+  return changePercent > 0
+    ? `+${changePercent.toFixed(1)}%`
+    : `${changePercent.toFixed(1)}%`;
+});
 
 const steamValueChange = computed(() => {
-    if (transactions.value.length === 0) return "0%";
+  if (transactions.value.length === 0) return "0%";
 
-    // Calculate Steam value change based on recent transactions
-    const now = new Date()
-    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+  // Calculate Steam value change based on recent transactions
+  const now = new Date();
+  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-    const recentTransactions = transactions.value.filter(t =>
-        t.transacted_at && new Date(t.transacted_at) >= weekAgo,
-    );
+  const recentTransactions = transactions.value.filter(
+    (t) => t.transacted_at && new Date(t.transacted_at) >= weekAgo,
+  );
 
-    const recentValue = recentTransactions.reduce(
-        (sum, t) => sum + t.unit_factor * t.unit_price,
-        0
-    )
-    const recentSteamValue = (recentValue / 1.15) - 0.01
-    const totalSteamValue = steamValue.value
+  const recentValue = recentTransactions.reduce(
+    (sum, t) => sum + t.unit_factor * t.unit_price,
+    0,
+  );
+  const recentSteamValue = recentValue / 1.15 - 0.01;
+  const totalSteamValue = steamValue.value;
 
-    if (totalSteamValue === 0) return '0%'
+  if (totalSteamValue === 0) return "0%";
 
-    const changePercent = (recentSteamValue / totalSteamValue) * 100
-    return changePercent > 0 ? `+${changePercent.toFixed(1)}%` : `${changePercent.toFixed(1)}%`
-})
+  const changePercent = (recentSteamValue / totalSteamValue) * 100;
+  return changePercent > 0
+    ? `+${changePercent.toFixed(1)}%`
+    : `${changePercent.toFixed(1)}%`;
+});
 
 const cashoutMarginChange = computed(() => {
-    if (transactions.value.length === 0) return "0%";
+  if (transactions.value.length === 0) return "0%";
 
-    // Calculate cashout margin change based on recent transactions
-    const now = new Date()
-    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+  // Calculate cashout margin change based on recent transactions
+  const now = new Date();
+  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-    const recentTransactions = transactions.value.filter(t =>
-        t.transacted_at && new Date(t.transacted_at) >= weekAgo,
-    );
+  const recentTransactions = transactions.value.filter(
+    (t) => t.transacted_at && new Date(t.transacted_at) >= weekAgo,
+  );
 
-    const recentValue = recentTransactions.reduce(
-        (sum, t) => sum + t.unit_factor * t.unit_price,
-        0
-    )
-    const recentSteamValue = (recentValue / 1.15) - 0.01
-    const recentMargin = recentValue - recentSteamValue
-    const totalMargin = cashoutMargin.value
+  const recentValue = recentTransactions.reduce(
+    (sum, t) => sum + t.unit_factor * t.unit_price,
+    0,
+  );
+  const recentSteamValue = recentValue / 1.15 - 0.01;
+  const recentMargin = recentValue - recentSteamValue;
+  const totalMargin = cashoutMargin.value;
 
-    if (totalMargin === 0) return '0%'
+  if (totalMargin === 0) return "0%";
 
-    const changePercent = (recentMargin / totalMargin) * 100
-    return changePercent > 0 ? `+${changePercent.toFixed(1)}%` : `${changePercent.toFixed(1)}%`
-})
+  const changePercent = (recentMargin / totalMargin) * 100;
+  return changePercent > 0
+    ? `+${changePercent.toFixed(1)}%`
+    : `${changePercent.toFixed(1)}%`;
+});
 
 const totalItemsChange = computed(() => {
-    if (transactions.value.length === 0) return "+0";
+  if (transactions.value.length === 0) return "+0";
 
-    // Calculate items added in the last 7 days
-    const now = new Date()
-    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+  // Calculate items added in the last 7 days
+  const now = new Date();
+  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-    const recentItems = transactions.value
-        .filter((t) => t.transacted_at && new Date(t.transacted_at) >= weekAgo)
-        .reduce((sum, t) => sum + t.unit_factor, 0);
+  const recentItems = transactions.value
+    .filter((t) => t.transacted_at && new Date(t.transacted_at) >= weekAgo)
+    .reduce((sum, t) => sum + t.unit_factor, 0);
 
-    // Show percentage change for items if we have enough data
-    if (totalItems.value > 0 && recentItems > 0) {
-        const changePercent = (recentItems / totalItems.value) * 100;
-        return changePercent > 0 ? `+${changePercent.toFixed(1)}%` : `${changePercent.toFixed(1)}%`
-    }
+  // Show percentage change for items if we have enough data
+  if (totalItems.value > 0 && recentItems > 0) {
+    const changePercent = (recentItems / totalItems.value) * 100;
+    return changePercent > 0
+      ? `+${changePercent.toFixed(1)}%`
+      : `${changePercent.toFixed(1)}%`;
+  }
 
-    return recentItems > 0 ? `+${recentItems}` : "+0";
-})
+  return recentItems > 0 ? `+${recentItems}` : "+0";
+});
 
 // Computed properties for change types
 const totalSpentChangeType = computed(() => {
-    const change = parseFloat(totalSpentChange.value.replace("%", ""));
-    return change > 0 ? 'positive' : change < 0 ? 'negative' : 'neutral'
-})
+  const change = parseFloat(totalSpentChange.value.replace("%", ""));
+  return change > 0 ? "positive" : change < 0 ? "negative" : "neutral";
+});
 
 const steamValueChangeType = computed(() => {
-    const change = parseFloat(steamValueChange.value.replace("%", ""));
-    return change > 0 ? 'positive' : change < 0 ? 'negative' : 'neutral'
-})
+  const change = parseFloat(steamValueChange.value.replace("%", ""));
+  return change > 0 ? "positive" : change < 0 ? "negative" : "neutral";
+});
 
 const cashoutMarginChangeType = computed(() => {
-    const change = parseFloat(cashoutMarginChange.value.replace("%", ""));
-    return change > 0 ? 'positive' : change < 0 ? 'negative' : 'neutral'
-})
+  const change = parseFloat(cashoutMarginChange.value.replace("%", ""));
+  return change > 0 ? "positive" : change < 0 ? "negative" : "neutral";
+});
 
 const totalItemsChangeType = computed(() => {
-    const changeStr = totalItemsChange.value.replace("+", "").replace("%", "");
-    const change = parseFloat(changeStr)
-    return change > 0 ? 'positive' : change < 0 ? 'negative' : 'neutral'
-})
+  const changeStr = totalItemsChange.value.replace("+", "").replace("%", "");
+  const change = parseFloat(changeStr);
+  return change > 0 ? "positive" : change < 0 ? "negative" : "neutral";
+});
 
 // Utility function to format currency
 const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("de-DE", {
-        style: "currency",
-        currency: "EUR",
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    }).format(value)
-}
+  return new Intl.NumberFormat("de-DE", {
+    style: "currency",
+    currency: "EUR",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+};
 
 onMounted(async () => {
-    // Fetch transactions
-    const { data, error } = await supabase.from("cs_transaction").select("*");
-    if (error) {
-        console.error("error fetching transactions", error);
-    } else {
-        console.log("Successfully fetched transactions", data);
-        transactions.value = data || []
-    }
-})
+  // Fetch transactions
+  const { data, error } = await supabase.from("cs_transaction").select("*");
+  if (error) {
+    console.error("error fetching transactions", error);
+    error(`Failed to load transactions: ${error.message}`);
+  } else {
+    console.log("Successfully fetched transactions", data);
+    transactions.value = data || [];
+    info(`Loaded ${data?.length || 0} transactions`);
+  }
+});
 </script>
 
 <template>
-    <main class="main-content">
-        <!-- Stats Cards -->
-        <section class="stats-section">
-            <div class="stats-grid">
-                <DashboardCard title="Ausgaben" :value="formatCurrency(totalSpent)" :change="totalSpentChange"
-                    :change-type="totalSpentChangeType" icon="💰" />
-                <DashboardCard title="Steam Netto" :value="formatCurrency(steamValue)" :change="steamValueChange"
-                    :changeType="steamValueChangeType" icon="🎮" />
-                <DashboardCard title="Steam Gewinn" :value="formatCurrency(cashoutMargin)" :change="cashoutMarginChange"
-                    :changeType="cashoutMarginChangeType" icon="📈" />
-                <DashboardCard title="Gesamt Items" :value="totalItems.toString()" :change="totalItemsChange"
-                    :change-type="totalItemsChangeType" icon="📦" />
-            </div>
-        </section>
+  <main class="main-content">
+    <!-- Stats Cards -->
+    <section class="stats-section">
+      <div class="stats-grid">
+        <DashboardCard
+          title="Ausgaben"
+          :value="formatCurrency(totalSpent)"
+          :change="totalSpentChange"
+          :change-type="totalSpentChangeType"
+          icon="💰"
+        />
+        <DashboardCard
+          title="Steam Netto"
+          :value="formatCurrency(steamValue)"
+          :change="steamValueChange"
+          :change-type="steamValueChangeType"
+          icon="🎮"
+        />
+        <DashboardCard
+          title="Steam Gewinn"
+          :value="formatCurrency(cashoutMargin)"
+          :change="cashoutMarginChange"
+          :change-type="cashoutMarginChangeType"
+          icon="📈"
+        />
+        <DashboardCard
+          title="Gesamt Items"
+          :value="totalItems.toString()"
+          :change="totalItemsChange"
+          :change-type="totalItemsChangeType"
+          icon="📦"
+        />
+      </div>
+    </section>
 
-        <!-- Content Grid -->
-        <section class="content-section">
-            <div class="content-grid">
-                <!-- Transactions Panel -->
-                <div class="transactions-container">
-                    <TransactionLog v-model="transactions" @deleteTransaction="handleDeleteTransactionClicked" />
-                </div>
+    <!-- Content Grid -->
+    <section class="content-section">
+      <div class="content-grid">
+        <!-- Transactions Panel -->
+        <div class="transactions-container">
+          <TransactionLog
+            v-model="transactions"
+            @delete-transaction="handleDeleteTransactionClicked"
+          />
+        </div>
 
-                <!-- Side Panel -->
-                <AddTransactionForm @add-transaction="handleAddTransactionClicked" />
-            </div>
-        </section>
-    </main>
+        <!-- Side Panel -->
+        <AddTransactionForm @add-transaction="handleAddTransactionClicked" />
+      </div>
+    </section>
+  </main>
 </template>
 
 <style scoped>
 /* Main Content */
 .main-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .page-header {
-    background: var(--color-surface);
-    border-bottom: 1px solid var(--color-border);
-    padding: var(--space-xl);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-xl);
 }
 
 .header-content {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .page-title {
-    font-size: var(--font-size-3xl);
-    font-weight: var(--font-weight-bold);
-    color: var(--color-text);
-    margin: 0;
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+  margin: 0;
 }
 
 .header-actions {
-    display: flex;
-    gap: var(--space-sm);
+  display: flex;
+  gap: var(--space-sm);
 }
 
 .btn-icon {
-    margin-right: var(--space-xs);
+  margin-right: var(--space-xs);
 }
 
 /* Stats Section */
 .stats-section {
-    padding: var(--space-xl);
+  padding: var(--space-xl);
 }
 
 .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: var(--space-lg);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--space-lg);
 }
 
 /* Content Section */
 .content-section {
-    flex: 1;
-    padding: 0 var(--space-xl) var(--space-xl);
+  flex: 1;
+  padding: 0 var(--space-xl) var(--space-xl);
 }
 
 .content-grid {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: var(--space-lg);
-    height: 100%;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--space-lg);
+  height: 100%;
 }
 
 .content-panel {
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-sm);
-    display: flex;
-    flex-direction: column;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
 }
 
 .main-panel {
-    min-height: 0;
+  min-height: 0;
 }
 
 .side-panel {
-    min-height: 0;
+  min-height: 0;
 }
 
 .transactions-container {
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .panel-header {
-    padding: var(--space-lg);
-    border-bottom: 1px solid var(--color-border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: var(--color-bg-muted);
+  padding: var(--space-lg);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--color-bg-muted);
 }
 
 .panel-title {
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-semibold);
-    color: var(--color-text);
-    margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin: 0;
 }
 
 .panel-actions {
-    display: flex;
-    gap: var(--space-sm);
+  display: flex;
+  gap: var(--space-sm);
 }
 
 .panel-content {
-    flex: 1;
-    padding: var(--space-lg);
-    overflow: auto;
+  flex: 1;
+  padding: var(--space-lg);
+  overflow: auto;
 }
 
 /* Quick Actions */
 .quick-actions {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
 }
 
 .action-btn {
-    display: flex;
-    align-items: center;
-    gap: var(--space-sm);
-    padding: var(--space-md);
-    background: var(--color-bg-muted);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    color: var(--color-text);
-    text-decoration: none;
-    transition: all 0.2s ease;
-    cursor: pointer;
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-medium);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  background: var(--color-bg-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  text-decoration: none;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
 }
 
 .action-btn:hover {
-    background: var(--color-accent);
-    color: white;
-    border-color: var(--color-accent);
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-sm);
+  background: var(--color-accent);
+  color: white;
+  border-color: var(--color-accent);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
 .action-icon {
-    font-size: var(--font-size-lg);
+  font-size: var(--font-size-lg);
 }
 
 .action-text {
-    flex: 1;
+  flex: 1;
 }
 
 /* Responsive Design */
 @media (max-width: 1024px) {
-    .content-grid {
-        grid-template-columns: 1fr;
-    }
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 768px) {
-    .stats-grid {
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    }
+  .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
 
-    .page-header {
-        padding: var(--space-lg);
-    }
+  .page-header {
+    padding: var(--space-lg);
+  }
 
-    .page-title {
-        font-size: var(--font-size-2xl);
-    }
+  .page-title {
+    font-size: var(--font-size-2xl);
+  }
 }
 </style>

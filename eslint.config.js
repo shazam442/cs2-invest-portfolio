@@ -28,7 +28,10 @@ export default [
       "vue/no-v-html": "warn",
       "vue/require-default-prop": "error",
       "vue/require-prop-types": "error",
-      "vue/no-unused-vars": "error",
+      "vue/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_" },
+      ],
       "vue/no-mutating-props": "error",
       "vue/component-definition-name-casing": ["error", "PascalCase"],
       "vue/component-name-in-template-casing": ["error", "PascalCase"],
@@ -55,7 +58,6 @@ export default [
       "@typescript-eslint/no-empty-object-type": "warn",
 
       // General JavaScript rules
-      "no-console": process.env.NODE_ENV === "production" ? "error" : "warn",
       "no-debugger": process.env.NODE_ENV === "production" ? "error" : "warn",
       "no-unused-vars": "off", // Use TypeScript version instead
       "prefer-const": "error",

@@ -3,11 +3,13 @@ import { defineProps, defineEmits } from "vue";
 import { type Database } from "../../lib/supabase.types";
 import { formatDate } from "../../lib/utils";
 
-const props = defineProps<{
+defineProps<{
   item: Database["public"]["Tables"]["cs_transaction"]["Row"];
 }>();
 
-const emit = defineEmits(["deleteTransaction"]);
+const emit = defineEmits<{
+  deleteTransaction: [id: string];
+}>();
 
 const handleDeleteTransactionClicked = (id: string) => {
   console.log("deleting transaction", id);
@@ -38,29 +40,29 @@ const handleDeleteTransactionClicked = (id: string) => {
         <div class="detail-item">
           <span class="detail-label">Gesamtkosten</span>
           <span class="detail-value"
-          >{{ item.unit_factor * item.unit_price }} €</span
+            >{{ item.unit_factor * item.unit_price }} €</span
           >
         </div>
         <div class="detail-item">
           <span class="detail-label">Steam Wert</span>
           <span class="detail-value steam-value"
-          >{{ item.steamValue || "-" }} €</span
+            >{{ item.steamValue || "-" }} €</span
           >
         </div>
         <div class="detail-item">
           <span class="detail-label">Marge</span>
           <span class="detail-value margin-value"
-          >{{ item.cashoutMargin || "-" }} €</span
+            >{{ item.cashoutMargin || "-" }} €</span
           >
         </div>
       </div>
 
       <div class="item-actions">
         <button
-          class="btn btn-sm btn-danger"
+          class="delete-btn"
           @click="handleDeleteTransactionClicked(item.id)"
         >
-          <span class="btn-icon">🗑</span>
+          -
         </button>
       </div>
     </div>
@@ -68,6 +70,18 @@ const handleDeleteTransactionClicked = (id: string) => {
 </template>
 
 <style scoped>
+.delete-btn {
+  background: var(--color-error);
+  color: white;
+  border: none;
+  padding: 0 var(--space-xs);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
 .transaction-item {
   background: var(--color-surface);
   border: 1px solid var(--color-border);

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from "vue";
 import type { User } from "@supabase/supabase-js";
 
 defineProps<{
@@ -8,20 +9,44 @@ defineProps<{
 defineEmits<{
   logout: [];
 }>();
+
+// Sidebar collapse state - collapsed by default
+const isCollapsed = ref(true);
+
+const toggleSidebar = () => {
+  isCollapsed.value = !isCollapsed.value;
+};
 </script>
 
 <template>
-  <aside class="sidebar">
+  <aside class="sidebar" :class="{ collapsed: isCollapsed }">
     <div class="sidebar-header">
       <div class="logo">
-        <div class="logo-icon">Investment</div>
-        <span class="logo-text">Portfolio</span>
+        <div class="logo-icon">I</div>
+        <span v-if="!isCollapsed" class="logo-text">Portfolio</span>
       </div>
+      <button
+        class="toggle-btn"
+        :title="isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+        @click="toggleSidebar"
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          :class="{ rotated: !isCollapsed }"
+        >
+          <polyline points="9,18 15,12 9,6" />
+        </svg>
+      </button>
     </div>
     <nav class="sidebar-nav">
       <a href="#" class="nav-item active">
         <span class="nav-icon">🎮</span>
-        <span class="nav-text">CS2</span>
+        <span v-if="!isCollapsed" class="nav-text">CS2</span>
       </a>
     </nav>
 
@@ -32,7 +57,7 @@ defineEmits<{
           {{ user.email?.charAt(0).toUpperCase() || "U" }}
         </div>
       </div>
-      <div class="user-info">
+      <div v-if="!isCollapsed" class="user-info">
         <div class="user-name">{{ user.email || "User" }}</div>
         <div class="user-status">Online</div>
       </div>
@@ -64,17 +89,77 @@ defineEmits<{
   flex-direction: column;
   position: relative;
   z-index: 10;
+  transition: width 0.3s ease;
+}
+
+.sidebar.collapsed {
+  width: 70px;
 }
 
 .sidebar-header {
-  padding: var(--space-xl);
+  padding: var(--space-lg);
   border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  min-height: 60px;
+}
+
+.sidebar:not(.collapsed) .sidebar-header {
+  justify-content: space-between;
 }
 
 .logo {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
+  flex: 1;
+  min-width: 0;
+  justify-content: center;
+}
+
+.sidebar:not(.collapsed) .logo {
+  justify-content: flex-start;
+}
+
+.toggle-btn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+}
+
+.sidebar:not(.collapsed) .toggle-btn {
+  position: static;
+  transform: none;
+}
+
+.toggle-btn:hover {
+  background: var(--color-bg-muted);
+  color: var(--color-text);
+  border-color: var(--color-accent);
+}
+
+.toggle-btn svg {
+  transition: transform 0.2s ease;
+}
+
+.toggle-btn svg.rotated {
+  transform: rotate(180deg);
 }
 
 .logo-icon {
@@ -93,6 +178,9 @@ defineEmits<{
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-bold);
   color: var(--color-text);
+  transition: opacity 0.3s ease;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .sidebar-nav {
@@ -100,6 +188,14 @@ defineEmits<{
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
+}
+
+.sidebar.collapsed .sidebar-nav {
+  padding: var(--space-md);
+}
+
+.sidebar.collapsed .user-details {
+  padding: var(--space-md);
 }
 
 .nav-item {
@@ -112,6 +208,11 @@ defineEmits<{
   color: var(--color-text-muted);
   transition: all 0.2s ease;
   font-weight: var(--font-weight-medium);
+  justify-content: center;
+}
+
+.sidebar:not(.collapsed) .nav-item {
+  justify-content: flex-start;
 }
 
 .nav-item:hover {
@@ -130,6 +231,9 @@ defineEmits<{
 
 .nav-text {
   font-size: var(--font-size-sm);
+  transition: opacity 0.3s ease;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 /* User Details */
@@ -141,6 +245,15 @@ defineEmits<{
   align-items: center;
   gap: var(--space-sm);
   background: var(--color-bg-muted);
+  justify-content: center;
+  flex-direction: column;
+  min-height: 80px;
+}
+
+.sidebar:not(.collapsed) .user-details {
+  justify-content: flex-start;
+  flex-direction: row;
+  min-height: auto;
 }
 
 .user-avatar {
@@ -163,6 +276,7 @@ defineEmits<{
 .user-info {
   flex: 1;
   min-width: 0;
+  transition: opacity 0.3s ease;
 }
 
 .user-name {
@@ -230,12 +344,20 @@ defineEmits<{
   .sidebar {
     width: 240px;
   }
+
+  .sidebar.collapsed {
+    width: 70px;
+  }
 }
 
 @media (max-width: 768px) {
   .sidebar {
     width: 100%;
     height: auto;
+  }
+
+  .sidebar.collapsed {
+    width: 100%;
   }
 
   .sidebar-nav {
@@ -273,6 +395,10 @@ defineEmits<{
   .logout-btn svg {
     width: 14px;
     height: 14px;
+  }
+
+  .toggle-btn {
+    display: none;
   }
 }
 </style>

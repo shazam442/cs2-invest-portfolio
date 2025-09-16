@@ -2,6 +2,7 @@
 // App.vue now serves as the main router container
 import { useAuth } from "../lib/authentication";
 import Sidebar from "./components/Sidebar.vue";
+import FlashContainer from "./components/FlashContainer.vue";
 
 const { user, signOut, redirectToLogin } = useAuth();
 
@@ -24,6 +25,7 @@ const handleLogout = async () => {
   <div class="dashboard-container">
     <Sidebar :user="user" @logout="handleLogout" />
     <router-view />
+    <FlashContainer />
   </div>
 </template>
 
