@@ -1,17 +1,20 @@
 // API client for communicating with backend
 import { createClient } from "@supabase/supabase-js";
 
-if (
-  !import.meta.env.VITE_SUPABASE_URL ||
-  !import.meta.env.VITE_SUPABASE_PUBLIC_ACCESS_TOKEN
-) {
+const URL = 
+  import.meta.env.VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+
+const TOKEN = 
+  import.meta.env.VITE_SUPABASE_PUBLIC_ACCESS_TOKEN || process.env.VITE_SUPABASE_PUBLIC_ACCESS_TOKEN;
+
+if (!URL || !TOKEN) {
   throw new Error(
-    "VITE_SUPABASE_URL and VITE_SUPABASE_PUBLIC_ACCESS_TOKEN must be set in .env",
+    "VITE_SUPABASE_URL and VITE_SUPABASE_PUBLIC_ACCESS_TOKEN were not found",
   );
 }
 const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_PUBLIC_ACCESS_TOKEN,
+  URL,
+  TOKEN,
 );
 
 export default supabase;
