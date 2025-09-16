@@ -5,7 +5,7 @@ import { type Database } from "../../lib/types/supabase.types";
 import TransactionLogItem from "./TransactionLogItem.vue";
 import { formatDate, formatCurrency } from "../../lib/utils";
 import { usePriceCheckStore } from "@src/stores";
-import { getItemPrice } from "@lib/steamMarket";
+import { getItemMeanPrice7d } from "@lib/steamMarket";
 
 const transactions =
   defineModel<Database["public"]["Tables"]["cs_transaction"]["Row"][]>();
@@ -84,18 +84,17 @@ const handleCheckPricesClicked = async () => {
       const jitter = 200 + Math.floor(Math.random() * 400); // 200-600ms
       await new Promise((resolve) => setTimeout(resolve, jitter));
 
-      const result = await getItemPrice(name, {
-        currency: 3,
+      const result = await getItemMeanPrice7d(name, {
         appId: 730,
         retries: 4,
         baseDelayMs: 900,
         maxDelayMs: 6000,
       });
-      const volumeNum = Number.parseInt((result.raw.volume || "0").replace(/[^0-9]/g, ""), 10) || 0;
+      const volumeNum = result.volume7d || 0;
       await priceChecks.add({
         market_hash_name: name,
-        lowest_price: (result.lowestPrice ?? 0),
-        median_price: (result.medianPrice ?? 0),
+        lowest_price: (result.meanPrice7d ?? 0),
+        median_price: (result.meanPrice7d ?? 0),
         volume: volumeNum,
         origin: "steam",
       });
