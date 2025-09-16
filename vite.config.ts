@@ -21,6 +21,11 @@ export default defineConfig({
         target: "http://localhost:3001",
         changeOrigin: true,
       },
+      "/steam": {
+        target: "https://steamcommunity.com",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/steam/, ""),
+      },
     },
   },
 });
