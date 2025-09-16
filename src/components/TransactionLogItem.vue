@@ -19,12 +19,18 @@ const handleDeleteTransactionClicked = (id: string) => {
 };
 
 const PriceChecks = usePriceCheckStore();
-const steamLowestPrice = computed(() => {
-  const match = PriceChecks.priceChecks.find(
-    (pc) => pc.market_hash_name === item.name
-  );
-  return match?.lowest_price ?? 0;
-});
+const latestPriceCheck = computed(() =>
+  PriceChecks.priceChecks.find((pc) => pc.market_hash_name === item.name)
+);
+
+const steamLowestPrice = computed(() => latestPriceCheck.value?.lowest_price ?? 0);
+const steamMedianPrice = computed(() => latestPriceCheck.value?.median_price ?? 0);
+const steamCheckedAt = computed(() =>
+  latestPriceCheck.value?.created_at
+    ? new Date(latestPriceCheck.value.created_at).toLocaleString("de-DE")
+    : ""
+);
+const steamTotalPrice = computed(() => (steamLowestPrice.value || 0) * (item.unit_factor || 0));
 </script>
 
 <template>
@@ -52,8 +58,18 @@ const steamLowestPrice = computed(() => {
           <span class="detail-value">{{ formatCurrency(item.unit_factor * item.unit_price) }}</span>
         </div>
         <div class="detail-item">
-          <span class="detail-label">Steam Wert</span>
-          <span class="detail-value steam-value">{{ formatCurrency(steamLowestPrice) }}</span>
+          <span class="detail-label">Steam Einzel</span>
+          <span
+            class="detail-value steam-value"
+            :title="steamCheckedAt ? `Preis geprüft: ${steamCheckedAt}` : ''"
+          >
+            {{ formatCurrency(steamLowestPrice) }}
+          </span>
+          <span class="detail-subtle">Median: {{ formatCurrency(steamMedianPrice) }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Steam Gesamt</span>
+          <span class="detail-value steam-value">{{ formatCurrency(steamTotalPrice) }}</span>
         </div>
         <div class="detail-item">
           <span class="detail-label">Marge</span>
@@ -172,6 +188,11 @@ const steamLowestPrice = computed(() => {
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   color: var(--color-text);
+}
+
+.detail-subtle {
+  font-size: 10px;
+  color: var(--color-text-muted);
 }
 
 .steam-value {
