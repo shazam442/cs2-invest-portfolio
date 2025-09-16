@@ -7,29 +7,123 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# Dependencies
+node_modules/
 
-# Editor directories and files
+# Build output
+dist/
+dist-ssr/
+build/
+out/
+.next/
+.nuxt/
+.vuepress/dist/
+
+# Vite cache
+.vite/
+
+# Editor & OS
 .vscode/*
 !.vscode/extensions.json
-.idea
+.idea/
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
+Thumbs.db
+desktop.ini
 *.sw?
-**/*/.env*
-.env
+*~
+
+# Temporary & cache
+tmp/
+temp/
+.tmp/
+.cache/
+*.tmp
+*.temp
+*.pid
+*.seed
+*.pid.lock
+
+# Testing & coverage
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+test-results.xml
+
+# Environment files
+**/.env*
+*.env
+!.env.example
+!.env.template
+.envrc
+.envrc.local
 
 # Supabase
-.branches
-.temp
+supabase/.branches
+supabase/.temp
 
-# dotenvx
-.env.keys
-.env.local
-.env.*.local
+# Database
+*.db
+*.sqlite
+*.sqlite3
+database.json
+db-config.json
+
+# Certificates & keys
+*.pem
+*.key
+*.crt
+*.cer
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.truststore
+id_rsa
+id_rsa.pub
+id_dsa
+id_dsa.pub
+id_ecdsa
+id_ecdsa.pub
+id_ed25519
+id_ed25519.pub
+known_hosts
+
+# Cloud & IaC
+.aws/
+.azure/
+.gcp/
+.terraform/
+terraform.tfstate
+terraform.tfstate.backup
+*.tfplan
+.vault-token
+
+# Docker (keep .dockerignore tracked)
+docker-compose.override.yml
+docker-compose.local.yml
+
+# Package manager
+.npmrc
+.yarnrc
+.pnpm-debug.log*
+.yarn-integrity
+package-lock.json.backup
+
+# Backups
+*.bak
+*.backup
+*.old
+*.orig
+*.rej
+
+# TypeScript
+*.tsbuildinfo
+
+# ESLint
+.eslintcache
+
+# Local development
+local/
+dev/
+development/

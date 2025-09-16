@@ -7,8 +7,9 @@
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
     "preview": "vite preview",
-    "lint": "eslint . --ext .js,.ts,.vue",
-    "lint:fix": "eslint . --ext .js,.ts,.vue --fix"
+    "lint": "eslint . --ext .js,.ts,.vue --fix",
+    "security:scan": "echo '🔍 Checking for .env files...' && find . -name '.env*' -not -name '.env.example' -not -path './node_modules/*' -not -path './.git/*' | head -5",
+    "audit": "npm audit --audit-level moderate"
   },
   "dependencies": {
     "cors": "^2.8.5",

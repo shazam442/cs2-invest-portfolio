@@ -1,0 +1,69 @@
+# Security Configuration for CS2 Investment Portfolio
+# This file contains security settings and patterns for the project
+
+# Sensitive data patterns to detect
+SENSITIVE_PATTERNS=(
+    "password\s*=\s*['\"][^'\"]*['\"]"
+    "api[_-]?key\s*=\s*['\"][^'\"]*['\"]"
+    "secret\s*=\s*['\"][^'\"]*['\"]"
+    "token\s*=\s*['\"][^'\"]*['\"]"
+    "credential\s*=\s*['\"][^'\"]*['\"]"
+    "sk-[a-zA-Z0-9]{20,}"
+    "pk_[a-zA-Z0-9]{20,}"
+    "AIza[0-9A-Za-z\\-_]{35}"
+    "ya29\\.[0-9A-Za-z\\-_]+"
+    "1//[0-9A-Za-z\\-_]+"
+    "eyJ[A-Za-z0-9_/+-]*\\.[A-Za-z0-9_/+-]*\\.[A-Za-z0-9_/+-]*"
+    "https://[a-zA-Z0-9.-]+\\.supabase\\.co"
+    "mongodb://[^/]+:[^@]+@"
+    "postgres://[^/]+:[^@]+@"
+    "mysql://[^/]+:[^@]+@"
+    "redis://[^/]+:[^@]+@"
+)
+
+# File extensions to scan
+SCAN_EXTENSIONS=(
+    "*.js"
+    "*.ts"
+    "*.vue"
+    "*.json"
+    "*.yaml"
+    "*.yml"
+    "*.toml"
+    "*.conf"
+    "*.config"
+)
+
+# Directories to exclude from scanning
+EXCLUDE_DIRS=(
+    "node_modules"
+    ".git"
+    "dist"
+    "build"
+    "coverage"
+    ".next"
+    ".nuxt"
+)
+
+# Files to exclude from scanning
+EXCLUDE_FILES=(
+    "*.md"
+    "*.txt"
+    "*.example"
+    "*.template"
+    "*.sample"
+    ".gitignore"
+    "package.json"
+    "package-lock.json"
+    "yarn.lock"
+    "pnpm-lock.yaml"
+    ".securityrc"
+)
+
+# Security thresholds
+MAX_SECRET_LENGTH=50
+MIN_SECRET_LENGTH=8
+
+# Git history scan settings
+GIT_HISTORY_DEPTH=100
+GIT_BRANCHES="--all"
