@@ -10,6 +10,8 @@ import { getItemPrice } from "@lib/steamMarket";
 const transactions =
   defineModel<Database["public"]["Tables"]["cs_transaction"]["Row"][]>();
 
+defineProps<{ canDelete?: boolean }>();
+
 const error = ref<string | null>(null);
 const sortBy = ref<"date" | "name" | "value">("date");
 const sortOrder = ref<"asc" | "desc">("desc");
@@ -45,19 +47,19 @@ const sortedAndFilteredTransactions = computed(() => {
     let comparison = 0;
 
     switch (sortBy.value) {
-    case "date":
-      comparison =
+      case "date":
+        comparison =
           new Date(a.transacted_at).getTime() -
           new Date(b.transacted_at).getTime();
         break;
-    case "name":
-      comparison = a.name.localeCompare(b.name);
+      case "name":
+        comparison = a.name.localeCompare(b.name);
         break;
-    case "value":
-      const aValue = a.unit_factor * a.unit_price;
+      case "value":
+        const aValue = a.unit_factor * a.unit_price;
         const bValue = b.unit_factor * b.unit_price;
-      comparison = aValue - bValue;
-      break;
+        comparison = aValue - bValue;
+        break;
     }
 
     return sortOrder.value === "asc" ? comparison : -comparison;
@@ -84,6 +86,8 @@ const handleCheckPricesClicked = async () => {
         lowest_price: result.lowestPrice ?? null,
         median_price: result.medianPrice ?? null,
       });
+      // Throttle to avoid Steam rate limits
+      await new Promise((resolve) => setTimeout(resolve, 1100));
     }
   } catch (err) {
     console.error("Error checking prices:", err);
@@ -133,42 +137,21 @@ const toggleFilters = () => {
       <div class="log-title">
         <h3>Transaktionshistorie</h3>
         <div class="log-stats">
-          <span class="log-count">{{ totalItems }} Items | {{ sortedAndFilteredTransactions.length }} Transaktionen</span> 
+          <span class="log-count">{{ totalItems }} Items | {{ sortedAndFilteredTransactions.length }}
+            Transaktionen</span>
         </div>
       </div>
       <div class="header-actions">
-        <button
-          class="filter-toggle-btn"
-          :disabled="isCheckingPrices"
-          @click="handleCheckPricesClicked"
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
+        <button class="filter-toggle-btn" :disabled="isCheckingPrices" @click="handleCheckPricesClicked">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10" />
             <path d="M12 6v6l4 2" />
           </svg>
           {{ isCheckingPrices ? 'Prüfe Preise…' : 'Preis-Check' }}
         </button>
 
-        <button
-          class="filter-toggle-btn"
-          :class="{ active: showFilters }"
-          @click="toggleFilters"
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
+        <button class="filter-toggle-btn" :class="{ active: showFilters }" @click="toggleFilters">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46" />
           </svg>
           Filter
@@ -191,27 +174,15 @@ const toggleFilters = () => {
       <div class="control-group">
         <label class="control-label">Sortieren nach:</label>
         <div class="sort-buttons">
-          <button
-            class="sort-btn"
-            :class="{ active: sortBy === 'date' }"
-            @click="toggleSort('date')"
-          >
+          <button class="sort-btn" :class="{ active: sortBy === 'date' }" @click="toggleSort('date')">
             Datum
             {{ sortBy === "date" ? (sortOrder === "asc" ? "↑" : "↓") : "" }}
           </button>
-          <button
-            class="sort-btn"
-            :class="{ active: sortBy === 'name' }"
-            @click="toggleSort('name')"
-          >
+          <button class="sort-btn" :class="{ active: sortBy === 'name' }" @click="toggleSort('name')">
             Name
             {{ sortBy === "name" ? (sortOrder === "asc" ? "↑" : "↓") : "" }}
           </button>
-          <button
-            class="sort-btn"
-            :class="{ active: sortBy === 'value' }"
-            @click="toggleSort('value')"
-          >
+          <button class="sort-btn" :class="{ active: sortBy === 'value' }" @click="toggleSort('value')">
             Wert
             {{ sortBy === "value" ? (sortOrder === "asc" ? "↑" : "↓") : "" }}
           </button>
@@ -220,19 +191,13 @@ const toggleFilters = () => {
     </div>
 
     <div class="log-content">
-      <div
-        v-if="!transactions || transactions.length === 0"
-        class="empty-state"
-      >
+      <div v-if="!transactions || transactions.length === 0" class="empty-state">
         <div class="empty-icon">📦</div>
         <h4>Noch keine Transaktionen</h4>
         <p>Fügen Sie Ihren ersten CS2-Item-Kauf hinzu, um zu beginnen</p>
       </div>
 
-      <div
-        v-else-if="sortedAndFilteredTransactions.length === 0"
-        class="empty-state"
-      >
+      <div v-else-if="sortedAndFilteredTransactions.length === 0" class="empty-state">
         <div class="empty-icon">🔍</div>
         <h4>Keine passenden Transaktionen</h4>
         <p>
@@ -241,12 +206,9 @@ const toggleFilters = () => {
       </div>
 
       <div v-else class="transaction-list">
-        <TransactionLogItem
-          v-for="transaction in sortedAndFilteredTransactions"
-          :key="transaction.id || transaction.name"
-          :item="transaction"
-          @delete-transaction="handleDeleteTransactionClicked($event)"
-        />
+        <TransactionLogItem v-for="transaction in sortedAndFilteredTransactions"
+          :key="transaction.id || transaction.name" :item="transaction" :can-delete="canDelete"
+          @delete-transaction="handleDeleteTransactionClicked($event)" />
       </div>
     </div>
   </div>
