@@ -5,181 +5,194 @@ import DashboardCard from '../components/DashboardCard.vue';
 import TransactionLog from '../components/TransactionLog.vue';
 import AddTransactionForm from '../components/AddTransactionForm.vue';
 import Sidebar from '../components/Sidebar.vue';
-import { type Database } from "../../lib/supabase.types"
-import supabase from "../../lib/api"
-
+import { type Database } from "../../lib/supabase.types";
+import supabase from "../../lib/api";
 
 const DASHBOARD_GAP = {
     factor: 1.5,
-    unit: "rem"
+    unit: "rem",
 }
 
-const DASHBOARD_GAP_FULL = computed(() => `${DASHBOARD_GAP.factor}${DASHBOARD_GAP.unit}`)
+const DASHBOARD_GAP_FULL = computed(
+    () => `${DASHBOARD_GAP.factor}${DASHBOARD_GAP.unit}`,
+)
 
 provide('globalStyles', {
     DASHBOARD_GAP,
-    DASHBOARD_GAP_FULL
-})
+    DASHBOARD_GAP_FULL,
+});
 
-const handleAddTransactionClicked = async (transaction: any) => {
-    // const createdTransaction = await apiClient.createTransaction(transaction);
+const handleAddTransactionClicked = async (transaction: NewCsTransaction) => {
     console.log(transaction);
-}
+    const { data, error } = await supabase
+        .from("cs_transaction")
+        .insert(transaction);
+};
 
 const handleDeleteTransactionClicked = (id: string) => {
-    console.log('deleting transaction', id);
-    // apiClient.deleteTransaction(id);
-}
+    console.log("deleting transaction", id);
+    supabase.from('cs_transaction').delete().eq('id', id)
+};
 
-const transactions = ref<Database['public']['Tables']['cs_transaction']['Row'][]>([]);
+const transactions = ref<
+    Database['public']['Tables']['cs_transaction']['Row'][]
+>([]);
 
 // Computed properties for dashboard statistics
 const totalSpent = computed(() => {
     return transactions.value.reduce((sum, transaction) => {
-        return sum + (transaction.unit_factor * transaction.unit_price);
-    }, 0);
-});
+        return sum + transaction.unit_factor * transaction.unit_price;
+    }, 0)
+})
 
 const totalItems = computed(() => {
     return transactions.value.reduce((sum, transaction) => {
         return sum + transaction.unit_factor;
-    }, 0);
-});
+    }, 0)
+})
 
 const steamValue = computed(() => {
     // Steam market fees: 15% total (5% Steam + 10% game-specific for CS2)
     // Net value after fees = gross value / 1.15 - 0.01
-    return (totalSpent.value / 1.15) - 0.01;
-});
+    return totalSpent.value / 1.15 - 0.01;
+})
 
 const cashoutMargin = computed(() => {
     return steamValue.value - totalSpent.value;
-});
+})
 
 const totalSpentChange = computed(() => {
-    if (transactions.value.length === 0) return '0%';
+    if (transactions.value.length === 0) return "0%";
 
     // Calculate change based on recent transactions (last 7 days)
-    const now = new Date();
-    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const now = new Date()
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
 
     const recentTransactions = transactions.value.filter(t =>
-        t.transacted_at && new Date(t.transacted_at) >= weekAgo
+        t.transacted_at && new Date(t.transacted_at) >= weekAgo,
     );
 
-    const recentValue = recentTransactions.reduce((sum, t) => sum + (t.unit_factor * t.unit_price), 0);
-    const totalSpentNum = totalSpent.value;
+    const recentValue = recentTransactions.reduce(
+        (sum, t) => sum + t.unit_factor * t.unit_price, 0
+    )
+    const totalSpentNum = totalSpent.value
 
-    if (totalSpentNum === 0) return '0%';
+    if (totalSpentNum === 0) return '0%'
 
     // Calculate what percentage of total value was added in the last 7 days
-    const changePercent = (recentValue / totalSpentNum) * 100;
-    return changePercent > 0 ? `+${changePercent.toFixed(1)}%` : `${changePercent.toFixed(1)}%`;
-});
+    const changePercent = (recentValue / totalSpentNum) * 100
+    return changePercent > 0 ? `+${changePercent.toFixed(1)}%` : `${changePercent.toFixed(1)}%`
+})
 
 const steamValueChange = computed(() => {
-    if (transactions.value.length === 0) return '0%';
+    if (transactions.value.length === 0) return "0%";
 
     // Calculate Steam value change based on recent transactions
-    const now = new Date();
-    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const now = new Date()
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
 
     const recentTransactions = transactions.value.filter(t =>
-        t.transacted_at && new Date(t.transacted_at) >= weekAgo
+        t.transacted_at && new Date(t.transacted_at) >= weekAgo,
     );
 
-    const recentValue = recentTransactions.reduce((sum, t) => sum + (t.unit_factor * t.unit_price), 0);
-    const recentSteamValue = (recentValue / 1.15) - 0.01;
-    const totalSteamValue = steamValue.value;
+    const recentValue = recentTransactions.reduce(
+        (sum, t) => sum + t.unit_factor * t.unit_price,
+        0
+    )
+    const recentSteamValue = (recentValue / 1.15) - 0.01
+    const totalSteamValue = steamValue.value
 
-    if (totalSteamValue === 0) return '0%';
+    if (totalSteamValue === 0) return '0%'
 
-    const changePercent = (recentSteamValue / totalSteamValue) * 100;
-    return changePercent > 0 ? `+${changePercent.toFixed(1)}%` : `${changePercent.toFixed(1)}%`;
-});
+    const changePercent = (recentSteamValue / totalSteamValue) * 100
+    return changePercent > 0 ? `+${changePercent.toFixed(1)}%` : `${changePercent.toFixed(1)}%`
+})
 
 const cashoutMarginChange = computed(() => {
-    if (transactions.value.length === 0) return '0%';
+    if (transactions.value.length === 0) return "0%";
 
     // Calculate cashout margin change based on recent transactions
-    const now = new Date();
-    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const now = new Date()
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
 
     const recentTransactions = transactions.value.filter(t =>
-        t.transacted_at && new Date(t.transacted_at) >= weekAgo
+        t.transacted_at && new Date(t.transacted_at) >= weekAgo,
     );
 
-    const recentValue = recentTransactions.reduce((sum, t) => sum + (t.unit_factor * t.unit_price), 0);
-    const recentSteamValue = (recentValue / 1.15) - 0.01;
-    const recentMargin = recentValue - recentSteamValue;
-    const totalMargin = cashoutMargin.value;
+    const recentValue = recentTransactions.reduce(
+        (sum, t) => sum + t.unit_factor * t.unit_price,
+        0
+    )
+    const recentSteamValue = (recentValue / 1.15) - 0.01
+    const recentMargin = recentValue - recentSteamValue
+    const totalMargin = cashoutMargin.value
 
-    if (totalMargin === 0) return '0%';
+    if (totalMargin === 0) return '0%'
 
-    const changePercent = (recentMargin / totalMargin) * 100;
-    return changePercent > 0 ? `+${changePercent.toFixed(1)}%` : `${changePercent.toFixed(1)}%`;
-});
+    const changePercent = (recentMargin / totalMargin) * 100
+    return changePercent > 0 ? `+${changePercent.toFixed(1)}%` : `${changePercent.toFixed(1)}%`
+})
 
 const totalItemsChange = computed(() => {
-    if (transactions.value.length === 0) return '+0';
+    if (transactions.value.length === 0) return "+0";
 
     // Calculate items added in the last 7 days
-    const now = new Date();
-    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const now = new Date()
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
 
     const recentItems = transactions.value
-        .filter(t => t.transacted_at && new Date(t.transacted_at) >= weekAgo)
+        .filter((t) => t.transacted_at && new Date(t.transacted_at) >= weekAgo)
         .reduce((sum, t) => sum + t.unit_factor, 0);
 
     // Show percentage change for items if we have enough data
     if (totalItems.value > 0 && recentItems > 0) {
         const changePercent = (recentItems / totalItems.value) * 100;
-        return changePercent > 0 ? `+${changePercent.toFixed(1)}%` : `${changePercent.toFixed(1)}%`;
+        return changePercent > 0 ? `+${changePercent.toFixed(1)}%` : `${changePercent.toFixed(1)}%`
     }
 
-    return recentItems > 0 ? `+${recentItems}` : '+0';
-});
+    return recentItems > 0 ? `+${recentItems}` : "+0";
+})
 
 // Computed properties for change types
 const totalSpentChangeType = computed(() => {
-    const change = parseFloat(totalSpentChange.value.replace('%', ''));
-    return change > 0 ? 'positive' : change < 0 ? 'negative' : 'neutral';
-});
+    const change = parseFloat(totalSpentChange.value.replace("%", ""));
+    return change > 0 ? 'positive' : change < 0 ? 'negative' : 'neutral'
+})
 
 const steamValueChangeType = computed(() => {
-    const change = parseFloat(steamValueChange.value.replace('%', ''));
-    return change > 0 ? 'positive' : change < 0 ? 'negative' : 'neutral';
-});
+    const change = parseFloat(steamValueChange.value.replace("%", ""));
+    return change > 0 ? 'positive' : change < 0 ? 'negative' : 'neutral'
+})
 
 const cashoutMarginChangeType = computed(() => {
-    const change = parseFloat(cashoutMarginChange.value.replace('%', ''));
-    return change > 0 ? 'positive' : change < 0 ? 'negative' : 'neutral';
-});
+    const change = parseFloat(cashoutMarginChange.value.replace("%", ""));
+    return change > 0 ? 'positive' : change < 0 ? 'negative' : 'neutral'
+})
 
 const totalItemsChangeType = computed(() => {
-    const changeStr = totalItemsChange.value.replace('+', '').replace('%', '');
-    const change = parseFloat(changeStr);
-    return change > 0 ? 'positive' : change < 0 ? 'negative' : 'neutral';
-});
+    const changeStr = totalItemsChange.value.replace("+", "").replace("%", "");
+    const change = parseFloat(changeStr)
+    return change > 0 ? 'positive' : change < 0 ? 'negative' : 'neutral'
+})
 
 // Utility function to format currency
 const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('de-DE', {
-        style: 'currency',
-        currency: 'EUR',
+    return new Intl.NumberFormat("de-DE", {
+        style: "currency",
+        currency: "EUR",
         minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    }).format(value);
-};
+        maximumFractionDigits: 2,
+    }).format(value)
+}
 
 onMounted(async () => {
     // Fetch transactions
-    const { data, error } = await supabase.from('cs_transaction').select('*');
+    const { data, error } = await supabase.from("cs_transaction").select("*");
     if (error) {
-        console.error('error fetching transactions', error);
+        console.error("error fetching transactions", error);
     } else {
-        console.log('Successfully fetched transactions', data);
-        transactions.value = data || [];
+        console.log("Successfully fetched transactions", data);
+        transactions.value = data || []
     }
 })
 </script>
@@ -190,13 +203,13 @@ onMounted(async () => {
         <section class="stats-section">
             <div class="stats-grid">
                 <DashboardCard title="Ausgaben" :value="formatCurrency(totalSpent)" :change="totalSpentChange"
-                    :changeType="totalSpentChangeType" icon="💰" />
+                    :change-type="totalSpentChangeType" icon="💰" />
                 <DashboardCard title="Steam Netto" :value="formatCurrency(steamValue)" :change="steamValueChange"
                     :changeType="steamValueChangeType" icon="🎮" />
                 <DashboardCard title="Steam Gewinn" :value="formatCurrency(cashoutMargin)" :change="cashoutMarginChange"
                     :changeType="cashoutMarginChangeType" icon="📈" />
                 <DashboardCard title="Gesamt Items" :value="totalItems.toString()" :change="totalItemsChange"
-                    :changeType="totalItemsChangeType" icon="📦" />
+                    :change-type="totalItemsChangeType" icon="📦" />
             </div>
         </section>
 
@@ -205,11 +218,11 @@ onMounted(async () => {
             <div class="content-grid">
                 <!-- Transactions Panel -->
                 <div class="transactions-container">
-                    <TransactionLog @deleteTransaction="handleDeleteTransactionClicked" v-model="transactions" />
+                    <TransactionLog v-model="transactions" @deleteTransaction="handleDeleteTransactionClicked" />
                 </div>
 
                 <!-- Side Panel -->
-                <AddTransactionForm @addTransaction="handleAddTransactionClicked" />
+                <AddTransactionForm @add-transaction="handleAddTransactionClicked" />
             </div>
         </section>
     </main>

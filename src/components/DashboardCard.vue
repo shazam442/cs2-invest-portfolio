@@ -1,11 +1,11 @@
 <script setup lang="ts">
 defineProps<{
-  title: string
-  value: string
-  change: string
-  changeType: 'positive' | 'negative' | 'neutral'
-  icon: string
-}>()
+  title: string;
+  value: string;
+  change: string;
+  changeType: "positive" | "negative" | "neutral";
+  icon: string;
+}>();
 </script>
 
 <template>
@@ -42,13 +42,17 @@ defineProps<{
 }
 
 .stats-card::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, var(--color-accent), var(--color-accent-hover));
+  background: linear-gradient(
+    90deg,
+    var(--color-accent),
+    var(--color-accent-hover)
+  );
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
 
@@ -104,7 +108,7 @@ defineProps<{
 }
 
 .change-positive::before {
-  content: '↗';
+  content: "↗";
   font-size: var(--font-size-sm);
 }
 
@@ -113,7 +117,7 @@ defineProps<{
 }
 
 .change-negative::before {
-  content: '↘';
+  content: "↘";
   font-size: var(--font-size-sm);
 }
 
@@ -122,7 +126,7 @@ defineProps<{
 }
 
 .change-neutral::before {
-  content: '→';
+  content: "→";
   font-size: var(--font-size-sm);
 }
 

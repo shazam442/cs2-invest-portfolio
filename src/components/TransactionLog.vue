@@ -1,27 +1,32 @@
 <script setup lang="ts">
-import { defineEmits, ref, inject, computed } from 'vue';
-import supabase from '../../lib/api';
-import { type Database } from '../../lib/supabase.types';
-import TransactionLogItem from './TransactionLogItem.vue';
-import { formatDate } from '../../lib/utils';
+import { defineEmits, ref, inject, computed } from "vue";
+import supabase from "../../lib/api";
+import { type Database } from "../../lib/supabase.types";
+import TransactionLogItem from "./TransactionLogItem.vue";
+import { formatDate } from "../../lib/utils";
 
-const transactions = defineModel<Database['public']['Tables']['cs_transaction']['Row'][]>();
+const transactions =
+  defineModel<Database["public"]["Tables"]["cs_transaction"]["Row"][]>();
 
 const error = ref<string | null>(null);
-const sortBy = ref<'date' | 'name' | 'value'>('date');
-const sortOrder = ref<'asc' | 'desc'>('desc');
-const filterOrigin = ref<string>('all');
+const sortBy = ref<"date" | "name" | "value">("date");
+const sortOrder = ref<"asc" | "desc">("desc");
+const filterOrigin = ref<string>("all");
 const showFilters = ref<boolean>(false);
 
-const globalStyles = inject('globalStyles') as { DASHBOARD_GAP: { factor: number, unit: string } };
+const globalStyles = inject("globalStyles") as {
+  DASHBOARD_GAP: { factor: number; unit: string };
+};
 
-const emit = defineEmits(['deleteTransaction']);
+const emit = defineEmits(["deleteTransaction"]);
 
 const handleDeleteTransactionClicked = (id: string) => {
-  console.debug('deleteTransactionClicked', id);
-  emit('deleteTransaction', id);
-  transactions.value = transactions.value.filter(transaction => transaction.id !== id);
-}
+  console.debug("deleteTransactionClicked", id);
+  emit("deleteTransaction", id);
+  transactions.value = transactions.value.filter(
+    (transaction) => transaction.id !== id,
+  );
+};
 
 const sortedAndFilteredTransactions = computed(() => {
   if (!transactions.value) return [];
@@ -29,8 +34,8 @@ const sortedAndFilteredTransactions = computed(() => {
   let filtered = transactions.value;
 
   // Filter by origin
-  if (filterOrigin.value !== 'all') {
-    filtered = filtered.filter(t => t.origin === filterOrigin.value);
+  if (filterOrigin.value !== "all") {
+    filtered = filtered.filter((t) => t.origin === filterOrigin.value);
   }
 
   // Sort transactions
@@ -38,42 +43,43 @@ const sortedAndFilteredTransactions = computed(() => {
     let comparison = 0;
 
     switch (sortBy.value) {
-      case 'date':
-        comparison = new Date(a.transacted_at).getTime() - new Date(b.transacted_at).getTime();
+    case "date":
+      comparison =
+          new Date(a.transacted_at).getTime() -
+          new Date(b.transacted_at).getTime();
         break;
-      case 'name':
-        comparison = a.name.localeCompare(b.name);
+    case "name":
+      comparison = a.name.localeCompare(b.name);
         break;
-      case 'value':
-        const aValue = a.unit_factor * a.unit_price;
+    case "value":
+      const aValue = a.unit_factor * a.unit_price;
         const bValue = b.unit_factor * b.unit_price;
-        comparison = aValue - bValue;
-        break;
+      comparison = aValue - bValue;
+      break;
     }
 
-    return sortOrder.value === 'asc' ? comparison : -comparison;
+    return sortOrder.value === "asc" ? comparison : -comparison;
   });
 });
 
 const uniqueOrigins = computed(() => {
   if (!transactions.value) return [];
-  const origins = [...new Set(transactions.value.map(t => t.origin))];
+  const origins = [...new Set(transactions.value.map((t) => t.origin))];
   return origins.sort();
 });
 
-const toggleSort = (field: 'date' | 'name' | 'value') => {
+const toggleSort = (field: "date" | "name" | "value") => {
   if (sortBy.value === field) {
-    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
+    sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc";
   } else {
     sortBy.value = field;
-    sortOrder.value = 'asc';
+    sortOrder.value = "asc";
   }
 };
 
 const toggleFilters = () => {
   showFilters.value = !showFilters.value;
 };
-
 </script>
 
 <template>
@@ -81,11 +87,24 @@ const toggleFilters = () => {
     <div class="log-header">
       <div class="log-title">
         <h3>Transaktionshistorie</h3>
-        <span class="log-count">{{ sortedAndFilteredTransactions.length }} Items</span>
+        <span class="log-count"
+          >{{ sortedAndFilteredTransactions.length }} Items</span
+        >
       </div>
-      <button @click="toggleFilters" class="filter-toggle-btn" :class="{ active: showFilters }">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46"></polygon>
+      <button
+        class="filter-toggle-btn"
+        :class="{ active: showFilters }"
+        @click="toggleFilters"
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46" />
         </svg>
         Filter
       </button>
@@ -106,36 +125,62 @@ const toggleFilters = () => {
       <div class="control-group">
         <label class="control-label">Sortieren nach:</label>
         <div class="sort-buttons">
-          <button @click="toggleSort('date')" class="sort-btn" :class="{ active: sortBy === 'date' }">
-            Datum {{ sortBy === 'date' ? (sortOrder === 'asc' ? '↑' : '↓') : '' }}
+          <button
+            class="sort-btn"
+            :class="{ active: sortBy === 'date' }"
+            @click="toggleSort('date')"
+          >
+            Datum
+            {{ sortBy === "date" ? (sortOrder === "asc" ? "↑" : "↓") : "" }}
           </button>
-          <button @click="toggleSort('name')" class="sort-btn" :class="{ active: sortBy === 'name' }">
-            Name {{ sortBy === 'name' ? (sortOrder === 'asc' ? '↑' : '↓') : '' }}
+          <button
+            class="sort-btn"
+            :class="{ active: sortBy === 'name' }"
+            @click="toggleSort('name')"
+          >
+            Name
+            {{ sortBy === "name" ? (sortOrder === "asc" ? "↑" : "↓") : "" }}
           </button>
-          <button @click="toggleSort('value')" class="sort-btn" :class="{ active: sortBy === 'value' }">
-            Wert {{ sortBy === 'value' ? (sortOrder === 'asc' ? '↑' : '↓') : '' }}
+          <button
+            class="sort-btn"
+            :class="{ active: sortBy === 'value' }"
+            @click="toggleSort('value')"
+          >
+            Wert
+            {{ sortBy === "value" ? (sortOrder === "asc" ? "↑" : "↓") : "" }}
           </button>
         </div>
       </div>
     </div>
 
     <div class="log-content">
-      <div v-if="!transactions || transactions.length === 0" class="empty-state">
+      <div
+        v-if="!transactions || transactions.length === 0"
+        class="empty-state"
+      >
         <div class="empty-icon">📦</div>
         <h4>Noch keine Transaktionen</h4>
         <p>Fügen Sie Ihren ersten CS2-Item-Kauf hinzu, um zu beginnen</p>
       </div>
 
-      <div v-else-if="sortedAndFilteredTransactions.length === 0" class="empty-state">
+      <div
+        v-else-if="sortedAndFilteredTransactions.length === 0"
+        class="empty-state"
+      >
         <div class="empty-icon">🔍</div>
         <h4>Keine passenden Transaktionen</h4>
-        <p>Versuchen Sie, Ihre Filter anzupassen, um mehr Ergebnisse zu sehen</p>
+        <p>
+          Versuchen Sie, Ihre Filter anzupassen, um mehr Ergebnisse zu sehen
+        </p>
       </div>
 
       <div v-else class="transaction-list">
-        <TransactionLogItem v-for="transaction in sortedAndFilteredTransactions"
-          :key="transaction.id || transaction.name" :item="transaction"
-          @deleteTransaction="handleDeleteTransactionClicked($event)" />
+        <TransactionLogItem
+          v-for="transaction in sortedAndFilteredTransactions"
+          :key="transaction.id || transaction.name"
+          :item="transaction"
+          @delete-transaction="handleDeleteTransactionClicked($event)"
+        />
       </div>
     </div>
   </div>
@@ -212,7 +257,6 @@ const toggleFilters = () => {
 .filter-toggle-btn svg {
   flex-shrink: 0;
 }
-
 
 .log-controls {
   background: var(--color-bg-muted);

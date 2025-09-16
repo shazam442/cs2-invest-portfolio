@@ -1,26 +1,26 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import Login from '../pages/Login.vue'
-import Dashboard from '../pages/Dashboard.vue'
-import { requireAuth, requireGuest } from '../../lib/authentication'
+import { createRouter, createWebHistory } from "vue-router";
+import Login from "../pages/Login.vue";
+import Dashboard from "../pages/Dashboard.vue";
+import { requireAuth, requireGuest } from "../../lib/authentication";
 
 const routes = [
   {
-    path: '/login',
-    name: 'Login',
+    path: "/login",
+    name: "Login",
     component: Login,
-    beforeEnter: requireGuest
+    beforeEnter: requireGuest,
   },
   {
-    path: '/',
-    name: 'Dashboard',
+    path: "/",
+    name: "Dashboard",
     component: Dashboard,
-    beforeEnter: requireAuth
-  }
-]
+    beforeEnter: requireAuth,
+  },
+];
 
 const router = createRouter({
   history: createWebHistory(),
-  routes
-})
+  routes,
+});
 
-export default router
+export default router;
