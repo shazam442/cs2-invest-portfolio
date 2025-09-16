@@ -35,12 +35,11 @@ onMounted(() => {
     App.fetchTransactions(Auth.user.value.id);
     App.selectedUserId = Auth.user.value.id;
   }
-  App.isLoading = false;
 })
 </script>
 
 <template>
-  <div v-if="App.isLoading" class="loading-container">
+  <div v-if="Auth.isLoading" class="loading-container">
     <div class="loading-spinner">Loading...</div>
   </div>
   <div v-else-if="!Auth.isAuthenticated" class="login-wrapper">
