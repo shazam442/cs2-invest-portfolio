@@ -48,10 +48,10 @@ const handleClearAll = () => {
 <style scoped>
 .flash-container {
   position: fixed;
-  top: var(--space-lg);
-  right: var(--space-lg);
+  top: var(--space-md);
+  right: var(--space-md);
   z-index: 1000;
-  max-width: 400px;
+  max-width: 350px;
   width: 100%;
   pointer-events: none;
 }
@@ -60,11 +60,11 @@ const handleClearAll = () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--space-sm);
-  padding: var(--space-xs) var(--space-sm);
+  margin-bottom: var(--space-xs);
+  padding: var(--space-xs);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   box-shadow: var(--shadow-sm);
   pointer-events: auto;
 }
@@ -122,9 +122,9 @@ const handleClearAll = () => {
 /* Responsive design */
 @media (max-width: 768px) {
   .flash-container {
-    top: var(--space-md);
-    right: var(--space-md);
-    left: var(--space-md);
+    top: var(--space-sm);
+    right: var(--space-sm);
+    left: var(--space-sm);
     max-width: none;
   }
 
@@ -144,9 +144,9 @@ const handleClearAll = () => {
 
 @media (max-width: 480px) {
   .flash-container {
-    top: var(--space-sm);
-    right: var(--space-sm);
-    left: var(--space-sm);
+    top: var(--space-xs);
+    right: var(--space-xs);
+    left: var(--space-xs);
   }
 }
 </style>

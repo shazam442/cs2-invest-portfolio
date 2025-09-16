@@ -6,4 +6,15 @@ const formatDate = (date: string) => {
   });
 };
 
-export { formatDate };
+const formatCurrency = (value: number, fallback = "-") => {
+  if (isNaN(value) || value === undefined || value === null) return fallback
+  
+  return new Intl.NumberFormat("de-DE", {
+    style: "currency",
+    currency: "EUR",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+};
+
+export { formatDate, formatCurrency };

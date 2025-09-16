@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { defineProps, defineEmits } from "vue";
 import { type Database } from "../../lib/supabase.types";
-import { formatDate } from "../../lib/utils";
+import { formatDate, formatCurrency } from "../../lib/utils";
 
 defineProps<{
   item: Database["public"]["Tables"]["cs_transaction"]["Row"];
@@ -12,7 +12,7 @@ const emit = defineEmits<{
 }>();
 
 const handleDeleteTransactionClicked = (id: string) => {
-  console.log("deleting transaction", id);
+  console.debug("deleting transaction", id);
   emit("deleteTransaction", id);
 };
 </script>
@@ -40,19 +40,19 @@ const handleDeleteTransactionClicked = (id: string) => {
         <div class="detail-item">
           <span class="detail-label">Gesamtkosten</span>
           <span class="detail-value"
-            >{{ item.unit_factor * item.unit_price }} €</span
+            >{{ formatCurrency(item.unit_factor * item.unit_price) }}</span
           >
         </div>
         <div class="detail-item">
           <span class="detail-label">Steam Wert</span>
           <span class="detail-value steam-value"
-            >{{ item.steamValue || "-" }} €</span
+            >{{ formatCurrency(item.steamValue) }}</span
           >
         </div>
         <div class="detail-item">
           <span class="detail-label">Marge</span>
           <span class="detail-value margin-value"
-            >{{ item.cashoutMargin || "-" }} €</span
+            >{{ formatCurrency(item.cashoutMargin) }}</span
           >
         </div>
       </div>

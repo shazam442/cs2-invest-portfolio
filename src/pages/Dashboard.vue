@@ -8,7 +8,7 @@ import { type Database } from "../../lib/supabase.types";
 import supabase from "../../lib/api";
 import { useFlash } from "../composables/useFlash";
 
-const { success, error: _, warning: __, info } = useFlash();
+const Flash = useFlash();
 
 const DASHBOARD_GAP = {
   factor: 1.5,
@@ -33,19 +33,24 @@ const handleAddTransactionClicked = async (transaction: NewCsTransaction) => {
   transactions.value.push(data[0])
 
   if (error) {
-    error(`Failed to add transaction: ${error.message}`);
+    Flash.error(`Failed to add transaction: ${error.message}`);
   } else {
-    success("Transaction added successfully!");
+    Flash.success("Transaction added successfully!");
   }
 };
 
 const handleDeleteTransactionClicked = async (id: string) => {
-  const { error } = await supabase.from("cs_transaction").delete().eq("id", id);
+  const response = await supabase
+    .from("cs_transaction")
+    .delete()
+    .eq("id", id);
 
-  if (error) {
-    error(`Failed to delete transaction: ${error.message}`);
+  console.debug("response", response);
+    
+  if (response.status !== 200) {
+    Flash.error(`Failed to delete transaction: ${error.message}`);
   } else {
-    success("Transaction deleted successfully!");
+    Flash.success("Transaction deleted successfully!");
   }
 };
 
@@ -214,11 +219,10 @@ onMounted(async () => {
   const { data, error } = await supabase.from("cs_transaction").select("*");
   if (error) {
     console.error("error fetching transactions", error);
-    error(`Failed to load transactions: ${error.message}`);
+    Flash.error(`Failed to load transactions: ${error.message}`);
   } else {
-    console.log("Successfully fetched transactions", data);
+    console.debug("Successfully fetched transactions", data);
     transactions.value = data || [];
-    info(`Loaded ${data?.length || 0} transactions`);
   }
 });
 </script>
@@ -229,7 +233,7 @@ onMounted(async () => {
     <section class="stats-section">
       <div class="stats-grid">
         <DashboardCard
-          title="Ausgaben"
+          title="Portfolio"
           :value="formatCurrency(totalSpent)"
           :change="totalSpentChange"
           :change-type="totalSpentChangeType"

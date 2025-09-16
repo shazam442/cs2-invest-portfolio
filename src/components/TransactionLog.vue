@@ -3,7 +3,7 @@ import { defineEmits, ref, inject, computed } from "vue";
 import supabase from "../../lib/api";
 import { type Database } from "../../lib/supabase.types";
 import TransactionLogItem from "./TransactionLogItem.vue";
-import { formatDate } from "../../lib/utils";
+import { formatDate, formatCurrency } from "../../lib/utils";
 
 const transactions =
   defineModel<Database["public"]["Tables"]["cs_transaction"]["Row"][]>();
@@ -68,6 +68,21 @@ const uniqueOrigins = computed(() => {
   return origins.sort();
 });
 
+const totalValue = computed(() => {
+  if (!transactions.value) return 0;
+  return transactions.value.reduce((sum, t) => sum + (t.unit_factor * t.unit_price), 0);
+});
+
+const totalItems = computed(() => {
+  if (!transactions.value) return 0;
+  return transactions.value.reduce((sum, t) => sum + t.unit_factor, 0);
+});
+
+const averageValue = computed(() => {
+  if (!transactions.value || transactions.value.length === 0) return 0;
+  return totalValue.value / transactions.value.length;
+});
+
 const toggleSort = (field: "date" | "name" | "value") => {
   if (sortBy.value === field) {
     sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc";
@@ -87,9 +102,9 @@ const toggleFilters = () => {
     <div class="log-header">
       <div class="log-title">
         <h3>Transaktionshistorie</h3>
-        <span class="log-count"
-          >{{ sortedAndFilteredTransactions.length }} Items</span
-        >
+        <div class="log-stats">
+          <span class="log-count">{{ totalItems }} Items | {{ sortedAndFilteredTransactions.length }} Transaktionen</span> 
+        </div>
       </div>
       <button
         class="filter-toggle-btn"
@@ -97,8 +112,8 @@ const toggleFilters = () => {
         @click="toggleFilters"
       >
         <svg
-          width="16"
-          height="16"
+          width="14"
+          height="14"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -197,7 +212,7 @@ const toggleFilters = () => {
 
 .log-header {
   background: var(--color-bg-muted);
-  padding: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
   border-bottom: 1px solid var(--color-border);
   display: flex;
   align-items: center;
@@ -207,35 +222,60 @@ const toggleFilters = () => {
 .log-title {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
+  gap: var(--space-xs);
 }
 
 .log-title h3 {
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text);
   margin: 0;
 }
 
+.log-stats {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .log-count {
-  font-size: var(--font-size-xs);
+  font-size: 10px;
   color: var(--color-text-muted);
   background: var(--color-surface);
-  padding: 2px var(--space-xs);
+  padding: 1px var(--space-xs);
   border-radius: var(--radius-sm);
   border: 1px solid var(--color-border);
+  font-weight: var(--font-weight-medium);
+}
+
+.log-value {
+  font-size: 10px;
+  color: var(--color-accent);
+  background: var(--color-accent-light);
+  padding: 1px var(--space-xs);
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.log-avg {
+  font-size: 9px;
+  color: var(--color-text-subtle);
+  background: var(--color-bg-muted);
+  padding: 1px 4px;
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-medium);
 }
 
 .filter-toggle-btn {
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
-  padding: var(--space-xs) var(--space-sm);
+  gap: 4px;
+  padding: 4px var(--space-xs);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
+  font-size: 11px;
   font-weight: var(--font-weight-medium);
   cursor: pointer;
   transition: all 0.2s ease;
@@ -261,9 +301,9 @@ const toggleFilters = () => {
 .log-controls {
   background: var(--color-bg-muted);
   border-bottom: 1px solid var(--color-border);
-  padding: var(--space-sm) var(--space-md);
+  padding: var(--space-xs) var(--space-md);
   display: flex;
-  gap: var(--space-md);
+  gap: var(--space-sm);
   align-items: center;
   flex-wrap: wrap;
 }
@@ -271,24 +311,25 @@ const toggleFilters = () => {
 .control-group {
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
+  gap: 4px;
 }
 
 .control-label {
-  font-size: var(--font-size-xs);
+  font-size: 10px;
   font-weight: var(--font-weight-medium);
   color: var(--color-text);
   white-space: nowrap;
 }
 
 .control-select {
-  padding: 2px var(--space-xs);
+  padding: 2px 4px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-text);
-  font-size: var(--font-size-xs);
-  min-width: 100px;
+  font-size: 10px;
+  min-width: 80px;
+  height: 20px;
 }
 
 .control-select:focus {
@@ -299,20 +340,21 @@ const toggleFilters = () => {
 
 .sort-buttons {
   display: flex;
-  gap: 2px;
+  gap: 1px;
 }
 
 .sort-btn {
-  padding: 2px var(--space-xs);
+  padding: 2px 6px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-text-muted);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: var(--font-weight-medium);
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
+  height: 20px;
 }
 
 .sort-btn:hover {
@@ -328,36 +370,38 @@ const toggleFilters = () => {
 }
 
 .log-content {
-  max-height: 400px;
+  max-height: 500px;
   overflow-y: auto;
+  padding: var(--space-xs);
 }
 
 .empty-state {
   text-align: center;
-  padding: var(--space-lg);
+  padding: var(--space-md);
   color: var(--color-text-muted);
 }
 
 .empty-icon {
-  font-size: 2rem;
-  margin-bottom: var(--space-sm);
+  font-size: 1.5rem;
+  margin-bottom: var(--space-xs);
 }
 
 .empty-state h4 {
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text);
-  margin: 0 0 var(--space-xs) 0;
+  margin: 0 0 4px 0;
 }
 
 .empty-state p {
-  font-size: var(--font-size-xs);
+  font-size: 10px;
   margin: 0;
 }
 
 .transaction-list {
   display: flex;
   flex-direction: column;
+  gap: 2px;
 }
 
 /* Custom scrollbar */
@@ -382,20 +426,25 @@ const toggleFilters = () => {
 @media (max-width: 768px) {
   .log-header {
     flex-direction: column;
-    gap: var(--space-sm);
+    gap: var(--space-xs);
     align-items: stretch;
+  }
+
+  .log-stats {
+    flex-wrap: wrap;
+    gap: 4px;
   }
 
   .log-controls {
     flex-direction: column;
     align-items: stretch;
-    gap: var(--space-sm);
+    gap: var(--space-xs);
   }
 
   .control-group {
     flex-direction: column;
     align-items: stretch;
-    gap: var(--space-xs);
+    gap: 4px;
   }
 
   .sort-buttons {
@@ -404,7 +453,7 @@ const toggleFilters = () => {
   }
 
   .log-content {
-    max-height: 350px;
+    max-height: 400px;
   }
 }
 

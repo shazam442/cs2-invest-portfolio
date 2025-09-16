@@ -76,11 +76,11 @@ const handleClick = () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-md) var(--space-lg);
-  margin-bottom: var(--space-sm);
-  border-radius: var(--radius-md);
+  padding: var(--space-xs) var(--space-sm);
+  margin-bottom: var(--space-xs);
+  border-radius: var(--radius-sm);
   box-shadow: var(--shadow-sm);
-  border-left: 4px solid;
+  border-left: 3px solid;
   animation: slideIn 0.3s ease-out;
   max-width: 100%;
   word-wrap: break-word;
@@ -89,21 +89,21 @@ const handleClick = () => {
 .flash-message__content {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
+  gap: var(--space-xs);
   flex: 1;
   min-width: 0;
 }
 
 .flash-message__icon {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-sm);
   flex-shrink: 0;
 }
 
 .flash-message__text {
   color: inherit;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
-  line-height: 1.4;
+  line-height: 1.3;
 }
 
 .flash-message__dismiss {
@@ -111,15 +111,15 @@ const handleClick = () => {
   border: none;
   color: inherit;
   cursor: pointer;
-  padding: var(--space-xs);
+  padding: 2px;
   border-radius: var(--radius-sm);
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-bold);
   line-height: 1;
   opacity: 0.7;
   transition: opacity 0.2s ease;
   flex-shrink: 0;
-  margin-left: var(--space-sm);
+  margin-left: var(--space-xs);
 }
 
 .flash-message__dismiss:hover {
@@ -173,7 +173,7 @@ const handleClick = () => {
 /* Responsive design */
 @media (max-width: 768px) {
   .flash-message {
-    padding: var(--space-sm) var(--space-md);
+    padding: var(--space-xs) var(--space-sm);
     margin-bottom: var(--space-xs);
   }
 
@@ -182,7 +182,7 @@ const handleClick = () => {
   }
 
   .flash-message__icon {
-    font-size: var(--font-size-md);
+    font-size: var(--font-size-xs);
   }
 }
 </style>

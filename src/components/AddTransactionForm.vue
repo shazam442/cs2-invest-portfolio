@@ -1,15 +1,57 @@
 <script setup lang="ts">
-import { ref, defineEmits } from "vue";
+import { ref, defineEmits, onMounted, nextTick, watch } from "vue";
 import { NewCsTransaction } from "../../lib/types/types";
 import FuzzySearchInput from "./FuzzySearchInput.vue";
 
 const newTransactionName = ref("");
 const newTransactionAmount = ref(1);
 const newTransactionPrice = ref(0);
-const newTransactionOrigin = ref("");
-const newTransactionDate = ref("");
+const newTransactionOrigin = ref("steam");
+const newTransactionDate = ref(new Date().toISOString().split('T')[0]);
+const formKey = ref(0);
+
+// Debug: Log initial values
+onMounted(() => {
+  console.debug("Form initial values:", {
+    name: newTransactionName.value,
+    amount: newTransactionAmount.value,
+    price: newTransactionPrice.value,
+    origin: newTransactionOrigin.value,
+    date: newTransactionDate.value
+  });
+  
+  // Force set the form values after mount to ensure they're displayed
+  nextTick(() => {
+    // Re-set the values to ensure they're properly bound
+    forceSetDefaults();
+    
+    const amountInput = document.getElementById('newTransactionAmount') as HTMLInputElement;
+    const priceInput = document.getElementById('newTransactionPrice') as HTMLInputElement;
+    const originInput = document.getElementById('newTransactionOrigin') as HTMLInputElement;
+    const dateInput = document.getElementById('newTransactionDate') as HTMLInputElement;
+    
+    console.debug("DOM input values after force set:", {
+      amount: amountInput?.value,
+      price: priceInput?.value,
+      origin: originInput?.value,
+      date: dateInput?.value
+    });
+  });
+});
 
 const emit = defineEmits(["addTransaction"]);
+
+// Watch for changes to debug any unexpected resets
+watch([newTransactionAmount, newTransactionPrice, newTransactionOrigin, newTransactionDate], 
+  ([amount, price, origin, date], [oldAmount, oldPrice, oldOrigin, oldDate]) => {
+    console.debug("Form values changed:", {
+      amount: { from: oldAmount, to: amount },
+      price: { from: oldPrice, to: price },
+      origin: { from: oldOrigin, to: origin },
+      date: { from: oldDate, to: date }
+    });
+  }
+);
 
 const handleAddTransactionClicked = () => {
   const transaction: NewCsTransaction = {
@@ -21,14 +63,25 @@ const handleAddTransactionClicked = () => {
   };
 
   emit("addTransaction", transaction);
+  
+  // Clear form after successful submission
+  clearForm();
 };
 
 const clearForm = () => {
   newTransactionName.value = "";
   newTransactionAmount.value = 1;
   newTransactionPrice.value = 0;
-  newTransactionOrigin.value = "";
-  newTransactionDate.value = "";
+  newTransactionOrigin.value = "steam";
+  newTransactionDate.value = new Date().toISOString().split('T')[0];
+  formKey.value += 1; // Force form re-render
+};
+
+const forceSetDefaults = () => {
+  newTransactionAmount.value = 1;
+  newTransactionPrice.value = 0;
+  newTransactionOrigin.value = "steam";
+  newTransactionDate.value = new Date().toISOString().split('T')[0];
 };
 </script>
 
@@ -44,7 +97,7 @@ const clearForm = () => {
     <form
       class="form"
       @submit.prevent.stop="handleAddTransactionClicked"
-      @reset.prevent.stop="clearForm"
+      :key="formKey"
     >
       <div class="form-grid">
         <div class="form-group">
@@ -114,9 +167,13 @@ const clearForm = () => {
             <span class="btn-icon">+</span>
             Transaktion hinzufügen
           </button>
-          <button type="reset" class="btn btn-secondary">
+          <button type="button" class="btn btn-secondary" @click="clearForm">
             <span class="btn-icon">↻</span>
             Formular leeren
+          </button>
+          <button type="button" class="btn btn-secondary" @click="forceSetDefaults">
+            <span class="btn-icon">🔧</span>
+            Setze Standardwerte
           </button>
         </div>
       </div>

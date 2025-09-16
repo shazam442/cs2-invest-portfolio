@@ -28,10 +28,7 @@ export default [
       "vue/no-v-html": "warn",
       "vue/require-default-prop": "error",
       "vue/require-prop-types": "error",
-      "vue/no-unused-vars": [
-        "error",
-        { argsIgnorePattern: "^_" },
-      ],
+      "vue/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
       "vue/no-mutating-props": "error",
       "vue/component-definition-name-casing": ["error", "PascalCase"],
       "vue/component-name-in-template-casing": ["error", "PascalCase"],
