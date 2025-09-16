@@ -46,34 +46,31 @@ const steamTotalPrice = computed(() => (steamLowestPrice.value || 0) * (item.uni
 
       <div class="item-details">
         <div class="detail-item">
-          <span class="detail-label">Anzahl</span>
           <span class="detail-value">{{ item.unit_factor }}x</span>
+          <span class="detail-label">Stück</span>
         </div>
         <div class="detail-item">
-          <span class="detail-label">Einzelpreis</span>
           <span class="detail-value">{{ item.unit_price }} €</span>
+          <span class="detail-label">Einzel</span>
         </div>
         <div class="detail-item">
-          <span class="detail-label">Gesamtkosten</span>
           <span class="detail-value">{{ formatCurrency(item.unit_factor * item.unit_price) }}</span>
+          <span class="detail-label">Gekauft</span>
         </div>
         <div class="detail-item">
-          <span class="detail-label">Steam Einzel</span>
-          <span
-            class="detail-value steam-value"
-            :title="steamCheckedAt ? `Preis geprüft: ${steamCheckedAt}` : ''"
-          >
+          <span class="detail-value steam-value" :title="steamCheckedAt ? `Preis geprüft: ${steamCheckedAt}` : ''">
             {{ formatCurrency(steamLowestPrice) }}
           </span>
+          <span class="detail-label">Steam</span>
           <span class="detail-subtle">Median: {{ formatCurrency(steamMedianPrice) }}</span>
         </div>
         <div class="detail-item">
-          <span class="detail-label">Steam Gesamt</span>
           <span class="detail-value steam-value">{{ formatCurrency(steamTotalPrice) }}</span>
+          <span class="detail-label">Steam Total</span>
         </div>
         <div class="detail-item">
-          <span class="detail-label">Marge</span>
           <span class="detail-value margin-value">{{ formatCurrency(item.cashoutMargin) }}</span>
+          <span class="detail-label">Marge</span>
         </div>
       </div>
 

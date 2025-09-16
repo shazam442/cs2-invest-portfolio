@@ -27,9 +27,7 @@ const handleUserProfileClick = (userId: string) => {
   }
 }
 
-defineEmits<{
-  logout: [];
-}>();
+
 </script>
 
 <template>
@@ -56,13 +54,6 @@ defineEmits<{
           {{ user.email?.charAt(0).toUpperCase() || "U" }}
         </div>
       </div>
-      <button class="logout-btn" title="Logout" @click="$emit('logout')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-          <polyline points="16,17 21,12 16,7" />
-          <line x1="21" y1="12" x2="9" y2="12" />
-        </svg>
-      </button>
     </div>
   </aside>
 </template>
@@ -170,38 +161,7 @@ defineEmits<{
   font-size: var(--font-size-lg);
 }
 
-.logout-btn {
-  flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  color: var(--color-text-muted);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-}
 
-.logout-btn:hover {
-  background: #ef4444;
-  color: white;
-  border-color: #ef4444;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
-}
-
-.logout-btn:active {
-  transform: translateY(0);
-  box-shadow: 0 1px 2px rgba(239, 68, 68, 0.2);
-}
-
-.logout-btn svg {
-  flex-shrink: 0;
-}
 
 /* Mobile Responsive */
 @media (max-width: 768px) {
@@ -235,14 +195,5 @@ defineEmits<{
     font-size: var(--font-size-sm);
   }
 
-  .logout-btn {
-    width: 28px;
-    height: 28px;
-  }
-
-  .logout-btn svg {
-    width: 14px;
-    height: 14px;
-  }
 }
 </style>

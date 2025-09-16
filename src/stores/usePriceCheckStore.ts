@@ -36,7 +36,7 @@ export const usePriceCheckStore = defineStore("price_check", () => {
         try {
             const { data, error } = await supabase
                 .from("price_check")
-                .upsert(record, { onConflict: "market_hash_name" })
+                .insert(record)
                 .select();
             if (error) throw error;
             if (data && Array.isArray(data) && data[0]) {

@@ -16,21 +16,6 @@ const userProfileStore = useUserProfileStore();
 const App = useAppStore();
 const PriceChecks = usePriceCheckStore();
 
-const handleLogout = async () => {
-  try {
-    const { error } = await Auth.signOut();
-    if (error) {
-      console.error("Error signing out:", error);
-      // The signOut function now handles session clearing even on error,
-      // so the user will be logged out regardless
-    }
-  } catch (err) {
-    console.error("Unexpected error during logout:", err);
-    // Even if there's an unexpected error, the user should still be logged out
-    // The signOut function handles this case
-  }
-};
-
 onMounted(() => {
   // Only fetch data if user is authenticated
   if (isAuthenticated.value && user.value) {
@@ -64,7 +49,7 @@ watch([isAuthenticated, user], ([authed, currentUser]) => {
     <FlashContainer />
   </div>
   <div v-else-if="isAuthenticated" class="dashboard-container">
-    <Sidebar :user="user" :userProfiles="userProfileStore.userProfiles" @logout="handleLogout" />
+    <Sidebar :user="user" :userProfiles="userProfileStore.userProfiles" />
     <Dashboard />
     <FlashContainer />
   </div>

@@ -215,6 +215,17 @@ const isOwnProfile = computed(() => {
   return Auth.user.value?.id === App.selectedUserId;
 });
 
+const handleLogout = async () => {
+  try {
+    const { error } = await Auth.signOut();
+    if (error) {
+      console.error("Error signing out:", error);
+    }
+  } catch (err) {
+    console.error("Unexpected error during logout:", err);
+  }
+};
+
 // Utility function to format currency
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat("de-DE", {
@@ -234,6 +245,16 @@ const formatCurrency = (value: number) => {
         <div class="header-title-section">
           <h1 class="app-title">CS2 Investment Portfolio</h1>
           <div class="user-display-name">{{ selectedUserProfile?.display_name }}</div>
+        </div>
+        <div class="header-actions">
+          <button class="logout-button" title="Logout" @click="handleLogout">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16,17 21,12 16,7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+            <span class="logout-text">Logout</span>
+          </button>
         </div>
       </div>
     </header>
@@ -257,7 +278,8 @@ const formatCurrency = (value: number) => {
       <div class="content-grid">
         <!-- Transactions Panel -->
         <div class="transactions-container">
-          <TransactionLog v-model="App.transactions" @delete-transaction="handleDeleteTransactionClicked" />
+          <TransactionLog v-model="App.transactions" :can-delete="isOwnProfile"
+            @delete-transaction="handleDeleteTransactionClicked" />
         </div>
 
         <!-- Side Panel -->
@@ -365,6 +387,42 @@ const formatCurrency = (value: number) => {
 .header-actions {
   display: flex;
   gap: var(--space-sm);
+}
+
+.logout-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.logout-button:hover {
+  background: #ef4444;
+  color: white;
+  border-color: #ef4444;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
+}
+
+.logout-button:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(239, 68, 68, 0.2);
+}
+
+.logout-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.logout-text {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
 }
 
 .btn-icon {
