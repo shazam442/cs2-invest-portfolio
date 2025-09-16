@@ -5,6 +5,7 @@ import { type Database } from "../../lib/types/supabase.types";
 import TransactionLogItem from "./TransactionLogItem.vue";
 import { formatDate, formatCurrency } from "../../lib/utils";
 import { usePriceCheckStore } from "@src/stores";
+import { useFlash } from "@src/composables/useFlash";
 import { getItemMeanPrice7d } from "@lib/steamMarket";
 
 const transactions =
@@ -74,15 +75,17 @@ const uniqueItems = computed(() => {
 
 const priceChecks = usePriceCheckStore();
 const isCheckingPrices = ref(false);
+const Flash = useFlash();
 
 const handleCheckPricesClicked = async () => {
   if (!uniqueItems.value.length || isCheckingPrices.value) return;
   isCheckingPrices.value = true;
   try {
+    let dynamicDelay = 1200; // start conservative
     for (const name of uniqueItems.value) {
       // Randomized small delay before each call to spread requests
-      const jitter = 200 + Math.floor(Math.random() * 400); // 200-600ms
-      await new Promise((resolve) => setTimeout(resolve, jitter));
+      const jitter = 300 + Math.floor(Math.random() * 700); // 300-1000ms
+      await new Promise((resolve) => setTimeout(resolve, jitter + dynamicDelay));
 
       const result = await getItemMeanPrice7d(name, {
         appId: 730,
@@ -91,9 +94,22 @@ const handleCheckPricesClicked = async () => {
         maxDelayMs: 6000,
       });
       const volumeNum = result.volume7d || 0;
+      if (!result.success) {
+        if (result.rateLimited) {
+          Flash.warning(`Rate limit hit on "${name}". Slowing down…`, { duration: 6000 });
+          // Back off dynamically if rate limited
+          dynamicDelay = Math.min(dynamicDelay * 2, 8000);
+        } else {
+          Flash.error(`Preisabfrage fehlgeschlagen für "${name}"`, { duration: 6000 });
+        }
+        continue;
+      } else {
+        // Gradually relax delay when succeeding
+        dynamicDelay = Math.max(800, Math.floor(dynamicDelay * 0.8));
+      }
       await priceChecks.add({
         market_hash_name: name,
-        "7_day_mean_price": (result.meanPrice7d ?? 0),
+        "7d_sales_mean_price": (result.meanPrice7d ?? 0),
         current_low_price: (result.meanPrice7d ?? 0),
         volume: volumeNum,
         origin: "steam",

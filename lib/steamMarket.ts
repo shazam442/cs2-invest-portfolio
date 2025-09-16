@@ -126,11 +126,11 @@ function parseHistoryDate(dateStr: string): number | null {
 export async function getItemMeanPrice7d(
   marketHashName: string,
   options?: { appId?: number; signal?: AbortSignal; retries?: number; baseDelayMs?: number; maxDelayMs?: number }
-): Promise<{ success: boolean; meanPrice7d: number | null; volume7d: number }> {
+): Promise<{ success: boolean; meanPrice7d: number | null; volume7d: number; rateLimited?: boolean }> {
   const appId = options?.appId ?? DEFAULT_APP_ID;
   const retries = options?.retries ?? 3;
-  const baseDelayMs = options?.baseDelayMs ?? 800;
-  const maxDelayMs = options?.maxDelayMs ?? 5000;
+  const baseDelayMs = options?.baseDelayMs ?? 1200;
+  const maxDelayMs = options?.maxDelayMs ?? 20000;
 
   const endpoint = `/steam/market/pricehistory/?appid=${encodeURIComponent(
     String(appId)
@@ -143,10 +143,16 @@ export async function getItemMeanPrice7d(
       if (!response.ok) {
         if ((response.status === 429 || response.status >= 500) && attempt < retries) {
           attempt += 1;
-          await sleep(backoffDelay(attempt, baseDelayMs, maxDelayMs));
+          // Respect Retry-After if present, otherwise use exponential backoff with min floor
+          const retryAfter = response.headers.get("Retry-After");
+          const retryAfterMs = retryAfter ? Number.parseFloat(retryAfter) * 1000 : 0;
+          const expo = backoffDelay(attempt, baseDelayMs, maxDelayMs);
+          const minFloor = 2500; // ensure at least ~2.5s after 429
+          const delay = Math.max(retryAfterMs, expo, minFloor) + Math.floor(Math.random() * 600);
+          await sleep(delay);
           continue;
         }
-        return { success: false, meanPrice7d: null, volume7d: 0 };
+        return { success: false, meanPrice7d: null, volume7d: 0, rateLimited: response.status === 429 };
       }
       const text = await response.text();
       if (!text || text === "null") {
@@ -179,7 +185,8 @@ export async function getItemMeanPrice7d(
     } catch (_err) {
       if (attempt < retries) {
         attempt += 1;
-        await sleep(backoffDelay(attempt, baseDelayMs, maxDelayMs));
+        const delay = Math.max(backoffDelay(attempt, baseDelayMs, maxDelayMs), 2000) + Math.floor(Math.random() * 600);
+        await sleep(delay);
         continue;
       }
       return { success: false, meanPrice7d: null, volume7d: 0 };
