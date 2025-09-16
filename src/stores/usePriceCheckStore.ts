@@ -7,6 +7,8 @@ export interface PriceCheckRecord {
     market_hash_name: string;
     lowest_price: number | null;
     median_price: number | null;
+    volume: number | null;
+    origin: string;
     created_at?: string;
 }
 
@@ -34,7 +36,7 @@ export const usePriceCheckStore = defineStore("price_check", () => {
         try {
             const { data, error } = await supabase
                 .from("price_check")
-                .insert(record)
+                .upsert(record, { onConflict: "market_hash_name" })
                 .select();
             if (error) throw error;
             if (data && Array.isArray(data) && data[0]) {

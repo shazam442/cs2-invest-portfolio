@@ -91,10 +91,13 @@ const handleCheckPricesClicked = async () => {
         baseDelayMs: 900,
         maxDelayMs: 6000,
       });
+      const volumeNum = Number.parseInt((result.raw.volume || "0").replace(/[^0-9]/g, ""), 10) || 0;
       await priceChecks.add({
         market_hash_name: name,
-        lowest_price: result.lowestPrice ?? null,
-        median_price: result.medianPrice ?? null,
+        lowest_price: (result.lowestPrice ?? 0),
+        median_price: (result.medianPrice ?? 0),
+        volume: volumeNum,
+        origin: "steam",
       });
       // Base throttle to avoid Steam rate limits
       await new Promise((resolve) => setTimeout(resolve, 900));
