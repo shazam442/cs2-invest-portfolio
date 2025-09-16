@@ -93,8 +93,8 @@ const handleCheckPricesClicked = async () => {
       const volumeNum = result.volume7d || 0;
       await priceChecks.add({
         market_hash_name: name,
-        lowest_price: (result.meanPrice7d ?? 0),
-        median_price: (result.meanPrice7d ?? 0),
+        "7_day_mean_price": (result.meanPrice7d ?? 0),
+        current_low_price: (result.meanPrice7d ?? 0),
         volume: volumeNum,
         origin: "steam",
       });

@@ -5,8 +5,8 @@ import supabase from "@lib/api";
 export interface PriceCheckRecord {
     id?: number;
     market_hash_name: string;
-    lowest_price: number | null;
-    median_price: number | null;
+    "7_day_mean_price": number | null;
+    current_low_price: number | null;
     volume: number | null;
     origin: string;
     created_at?: string;
