@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { defineProps, defineEmits } from "vue";
+import { defineProps, defineEmits, computed } from "vue";
 import { type Database } from "../../lib/types/supabase.types";
 import { formatDate, formatCurrency } from "../../lib/utils";
+import { usePriceCheckStore } from "@src/stores";
 
-defineProps<{
+const { item, canDelete } = defineProps<{
   item: Database["public"]["Tables"]["cs_transaction"]["Row"];
+  canDelete?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -15,6 +17,14 @@ const handleDeleteTransactionClicked = (id: string) => {
   console.debug("deleting transaction", id);
   emit("deleteTransaction", id);
 };
+
+const PriceChecks = usePriceCheckStore();
+const steamLowestPrice = computed(() => {
+  const match = PriceChecks.priceChecks.find(
+    (pc) => pc.market_hash_name === item.name
+  );
+  return match?.lowest_price ?? 0;
+});
 </script>
 
 <template>
@@ -39,29 +49,20 @@ const handleDeleteTransactionClicked = (id: string) => {
         </div>
         <div class="detail-item">
           <span class="detail-label">Gesamtkosten</span>
-          <span class="detail-value"
-            >{{ formatCurrency(item.unit_factor * item.unit_price) }}</span
-          >
+          <span class="detail-value">{{ formatCurrency(item.unit_factor * item.unit_price) }}</span>
         </div>
         <div class="detail-item">
           <span class="detail-label">Steam Wert</span>
-          <span class="detail-value steam-value"
-            >{{ formatCurrency(item.steamValue) }}</span
-          >
+          <span class="detail-value steam-value">{{ formatCurrency(steamLowestPrice) }}</span>
         </div>
         <div class="detail-item">
           <span class="detail-label">Marge</span>
-          <span class="detail-value margin-value"
-            >{{ formatCurrency(item.cashoutMargin) }}</span
-          >
+          <span class="detail-value margin-value">{{ formatCurrency(item.cashoutMargin) }}</span>
         </div>
       </div>
 
-      <div class="item-actions">
-        <button
-          class="delete-btn"
-          @click="handleDeleteTransactionClicked(item.id)"
-        >
+      <div class="item-actions" v-if="canDelete">
+        <button class="delete-btn" @click="handleDeleteTransactionClicked(item.id)">
           -
         </button>
       </div>
