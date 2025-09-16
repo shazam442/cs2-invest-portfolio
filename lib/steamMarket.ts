@@ -17,6 +17,13 @@ export interface ItemPriceResult {
   raw: PriceOverviewResponse;
 }
 
+export interface PriceHistoryResponse {
+  success: boolean;
+  price_prefix?: string;
+  price_suffix?: string;
+  prices?: [string, number, string][]; // [dateStr, price, volumeStr]
+}
+
 const DEFAULT_APP_ID = 730; // CS2
 const DEFAULT_CURRENCY: SteamCurrencyCode = 3; // EUR
 
@@ -102,9 +109,88 @@ export async function getItemPrice(
   }
 }
 
+function parseHistoryDate(dateStr: string): number | null {
+  // Examples: "May 19 2020 01: +0" or "Aug 13 2020 01: +0"
+  // Normalize to a parsable UTC string
+  const match = dateStr.match(/^(\w{3}) (\d{2}) (\d{4}) (\d{2}): \+\d+$/);
+  if (!match) return null;
+  const [, mon, day, year, hour] = dateStr
+    .replace(": +", ":+")
+    .match(/^(\w{3}) (\d{2}) (\d{4}) (\d{2}):\+\d+$/) || [];
+  if (!mon || !day || !year || !hour) return null;
+  const normalized = `${mon} ${day} ${year} ${hour}:00:00 +0000`;
+  const ts = Date.parse(normalized);
+  return Number.isFinite(ts) ? ts : null;
+}
+
+export async function getItemMeanPrice7d(
+  marketHashName: string,
+  options?: { appId?: number; signal?: AbortSignal; retries?: number; baseDelayMs?: number; maxDelayMs?: number }
+): Promise<{ success: boolean; meanPrice7d: number | null; volume7d: number }> {
+  const appId = options?.appId ?? DEFAULT_APP_ID;
+  const retries = options?.retries ?? 3;
+  const baseDelayMs = options?.baseDelayMs ?? 800;
+  const maxDelayMs = options?.maxDelayMs ?? 5000;
+
+  const endpoint = `/steam/market/pricehistory/?appid=${encodeURIComponent(
+    String(appId)
+  )}&market_hash_name=${encodeURIComponent(marketHashName)}`;
+
+  let attempt = 0;
+  for (;;) {
+    try {
+      const response = await fetch(endpoint, { method: "GET", signal: options?.signal });
+      if (!response.ok) {
+        if ((response.status === 429 || response.status >= 500) && attempt < retries) {
+          attempt += 1;
+          await sleep(backoffDelay(attempt, baseDelayMs, maxDelayMs));
+          continue;
+        }
+        return { success: false, meanPrice7d: null, volume7d: 0 };
+      }
+      const text = await response.text();
+      if (!text || text === "null") {
+        return { success: false, meanPrice7d: null, volume7d: 0 };
+      }
+      const data = JSON.parse(text) as PriceHistoryResponse;
+      if (!data.success || !data.prices || data.prices.length === 0) {
+        return { success: false, meanPrice7d: null, volume7d: 0 };
+      }
+
+      const now = Date.now();
+      const cutoff = now - 7 * 24 * 60 * 60 * 1000;
+      let weightedSum = 0;
+      let volumeSum = 0;
+
+      for (const [dateStr, price, volStr] of data.prices) {
+        const ts = parseHistoryDate(dateStr);
+        if (ts === null || ts < cutoff) continue;
+        const vol = Number.parseInt((volStr || "0").replace(/[^0-9]/g, ""), 10) || 0;
+        if (vol <= 0) continue;
+        weightedSum += price * vol;
+        volumeSum += vol;
+      }
+
+      if (volumeSum === 0) {
+        return { success: true, meanPrice7d: null, volume7d: 0 };
+      }
+      const mean = weightedSum / volumeSum;
+      return { success: true, meanPrice7d: mean, volume7d: volumeSum };
+    } catch (_err) {
+      if (attempt < retries) {
+        attempt += 1;
+        await sleep(backoffDelay(attempt, baseDelayMs, maxDelayMs));
+        continue;
+      }
+      return { success: false, meanPrice7d: null, volume7d: 0 };
+    }
+  }
+}
+
 export default {
   getItemPrice,
   getItemUrl,
+  getItemMeanPrice7d,
 };
 
 /**
