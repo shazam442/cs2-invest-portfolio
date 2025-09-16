@@ -65,6 +65,20 @@ export async function getItemPrice(
 
 export default {
   getItemPrice,
+  getItemUrl,
 };
 
+/**
+ * Build the public Steam Market listing URL for a given item.
+ * Example: https://steamcommunity.com/market/listings/730/Operation%20Bravo%20Case
+ */
+export function getItemUrl(
+  marketHashName: string,
+  options?: { appId?: number }
+): string {
+  const appId = options?.appId ?? DEFAULT_APP_ID;
+  return `https://steamcommunity.com/market/listings/${encodeURIComponent(
+    String(appId)
+  )}/${encodeURIComponent(marketHashName)}`;
+}
 
