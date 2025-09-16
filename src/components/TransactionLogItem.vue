@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { defineProps, defineEmits } from "vue";
-import { type Database } from "../../lib/supabase.types";
+import { type Database } from "../../lib/types/supabase.types";
 import { formatDate, formatCurrency } from "../../lib/utils";
 
 defineProps<{

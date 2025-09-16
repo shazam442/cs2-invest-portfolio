@@ -4,7 +4,7 @@ import { computed, provide, onMounted, ref } from "vue";
 import DashboardCard from "../components/DashboardCard.vue";
 import TransactionLog from "../components/TransactionLog.vue";
 import AddTransactionForm from "../components/AddTransactionForm.vue";
-import { type Database } from "../../lib/supabase.types";
+import { type Database } from "../../lib/types/supabase.types";
 import supabase from "../../lib/api";
 import { useFlash } from "../composables/useFlash";
 

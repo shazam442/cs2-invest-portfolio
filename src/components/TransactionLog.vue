@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { defineEmits, ref, inject, computed } from "vue";
 import supabase from "../../lib/api";
-import { type Database } from "../../lib/supabase.types";
+import { type Database } from "../../lib/types/supabase.types";
 import TransactionLogItem from "./TransactionLogItem.vue";
 import { formatDate, formatCurrency } from "../../lib/utils";
 
