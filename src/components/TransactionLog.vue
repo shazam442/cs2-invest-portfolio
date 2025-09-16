@@ -184,7 +184,7 @@ const toggleFilters = () => {
       </div>
 
       <div class="control-group">
-        <label class="control-label">Sortieren nach:</label>
+        <label class="control-label">Sortieren:</label>
         <div class="sort-buttons">
           <button class="sort-btn" :class="{ active: sortBy === 'date' }" @click="toggleSort('date')">
             Datum
