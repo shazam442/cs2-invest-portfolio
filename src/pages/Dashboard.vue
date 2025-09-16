@@ -236,8 +236,8 @@ onMounted(async () => {
       <div class="header-content">
         <div class="header-title-section">
           <h1 class="app-title">CS2 Investment Portfolio</h1>
-          <p class="session-id" v-if="session?.access_token">
-            Session: {{ session.access_token.substring(0, 8) }}...
+          <p class="admin-status">
+            🔒 Admin Access
           </p>
         </div>
       </div>

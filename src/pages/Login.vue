@@ -77,8 +77,8 @@ const handleKeyPress = (event: KeyboardEvent) => {
   <div class="login-container">
     <div class="login-card">
       <div class="login-header">
-        <h1 class="login-title">Welcome Back</h1>
-        <p class="login-subtitle">Sign in to your CS2 Investment Portfolio</p>
+        <h1 class="login-title">dein Vater</h1>
+        <p class="login-subtitle">Im sorry miss jackson, I am for <i>reeeaaaall</i></p>
       </div>
 
       <form class="login-form" @submit.prevent="handleLogin">
@@ -90,7 +90,7 @@ const handleKeyPress = (event: KeyboardEvent) => {
             type="email"
             class="form-input"
             :class="{ error: errorMessage && !formData.email.trim() }"
-            placeholder="Enter your email"
+            placeholder="hans-peter@familie-müller.com"
             :disabled="isLoading"
             @keypress="handleKeyPress"
           />
@@ -104,7 +104,7 @@ const handleKeyPress = (event: KeyboardEvent) => {
             type="password"
             class="form-input"
             :class="{ error: errorMessage && !formData.password.trim() }"
-            placeholder="Enter your password"
+            placeholder="Hodenkobold123"
             :disabled="isLoading"
             @keypress="handleKeyPress"
           />
@@ -124,13 +124,6 @@ const handleKeyPress = (event: KeyboardEvent) => {
           <span v-else class="loading-spinner">Signing In...</span>
         </button>
       </form>
-
-      <div class="login-footer">
-        <p class="footer-text">
-          Don't have an account?
-          <a href="#" class="footer-link">Sign up here</a>
-        </p>
-      </div>
     </div>
   </div>
 </template>
