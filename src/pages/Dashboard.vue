@@ -7,8 +7,10 @@ import AddTransactionForm from "../components/AddTransactionForm.vue";
 import { type Database } from "../../lib/types/supabase.types";
 import supabase from "../../lib/api";
 import { useFlash } from "../composables/useFlash";
+import { useAuth } from "../../lib/authentication";
 
 const Flash = useFlash();
+const { session } = useAuth();
 
 const DASHBOARD_GAP = {
   factor: 1.5,
@@ -229,6 +231,18 @@ onMounted(async () => {
 
 <template>
   <main class="main-content">
+    <!-- Header Section -->
+    <header class="dashboard-header">
+      <div class="header-content">
+        <div class="header-title-section">
+          <h1 class="app-title">CS2 Investment Portfolio</h1>
+          <p class="session-id" v-if="session?.access_token">
+            Session: {{ session.access_token.substring(0, 8) }}...
+          </p>
+        </div>
+      </div>
+    </header>
+
     <!-- Stats Cards -->
     <section class="stats-section">
       <div class="stats-grid">
@@ -287,6 +301,55 @@ onMounted(async () => {
   flex: 1;
   display: flex;
   flex-direction: column;
+}
+
+/* Dashboard Header */
+.dashboard-header {
+  background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-bg-muted) 100%);
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-xl);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.header-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.header-title-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.app-title {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+  margin: 0;
+  background: linear-gradient(135deg, var(--color-text) 0%, var(--color-accent) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.02em;
+}
+
+.session-id {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  background: var(--color-bg-muted);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  display: inline-block;
+  max-width: fit-content;
 }
 
 .page-header {
@@ -440,6 +503,19 @@ onMounted(async () => {
 @media (max-width: 768px) {
   .stats-grid {
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+
+  .dashboard-header {
+    padding: var(--space-lg);
+  }
+
+  .app-title {
+    font-size: var(--font-size-2xl);
+  }
+
+  .session-id {
+    font-size: var(--font-size-xs);
+    padding: var(--space-xs);
   }
 
   .page-header {
